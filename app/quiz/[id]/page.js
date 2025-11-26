@@ -4,15 +4,19 @@
 
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/app/contexts/AuthContext';
 
 export default function QuizPage({ params }) {
   const router = useRouter();
   const unwrappedParams = use(params);
+  const { user, isBookmarked, addBookmark, removeBookmark, isInWatchlist, addToWatchlist, removeFromWatchlist } = useAuth();
+  
   const [quizData, setQuizData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState({});
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const [toast, setToast] = useState(null);
 
   // Lấy dữ liệu bài thi từ API
   useEffect(() => {
@@ -109,6 +113,53 @@ export default function QuizPage({ params }) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleBookmarkToggle = async () => {
+    if (!user) {
+      alert('Vui lòng đăng nhập để sử dụng tính năng này');
+      return;
+    }
+
+    try {
+      const quizId = parseInt(unwrappedParams.id);
+      if (isBookmarked(quizId)) {
+        await removeBookmark(quizId);
+        showToast('Đã xóa khỏi bookmark', 'success');
+      } else {
+        await addBookmark(quizId);
+        showToast('Đã thêm vào bookmark', 'success');
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      showToast('Có lỗi xảy ra', 'error');
+    }
+  };
+
+  const handleWatchlistToggle = async () => {
+    if (!user) {
+      alert('Vui lòng đăng nhập để sử dụng tính năng này');
+      return;
+    }
+
+    try {
+      const quizId = parseInt(unwrappedParams.id);
+      if (isInWatchlist(quizId)) {
+        await removeFromWatchlist(quizId);
+        showToast('Đã xóa khỏi watchlist', 'success');
+      } else {
+        await addToWatchlist(quizId);
+        showToast('Đã thêm vào watchlist', 'success');
+      }
+    } catch (error) {
+      console.error('Error toggling watchlist:', error);
+      showToast('Có lỗi xảy ra', 'error');
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto p-4 text-center">
@@ -123,10 +174,51 @@ export default function QuizPage({ params }) {
   const isMultiple = currentQuestion.type === 'multi_choice';
   const currentAnswer = userAnswers[currentQuestion.id];
 
+  const quizId = parseInt(unwrappedParams.id);
+
   return (
     <div className="container mx-auto p-4 max-w-6xl">
       <header className="flex justify-between items-center p-3 bg-indigo-50 border-b mb-6 rounded-lg">
-        <h1 className="text-2xl font-bold">{quizData.quizTitle}</h1>
+        <div className="flex items-center gap-4 flex-1">
+          <h1 className="text-2xl font-bold">{quizData.quizTitle}</h1>
+          
+          {/* Bookmark & Watchlist Buttons */}
+          {user && (
+            <div className="flex gap-2">
+              <button
+                onClick={handleBookmarkToggle}
+                className="p-2 rounded-lg bg-white hover:bg-gray-50 transition border border-gray-200"
+                title={isBookmarked(quizId) ? 'Xóa bookmark' : 'Thêm bookmark'}
+              >
+                {isBookmarked(quizId) ? (
+                  <svg className="w-5 h-5 fill-yellow-500" viewBox="0 0 20 20">
+                    <path d="M10 2l2.5 6.5L19 9l-5 4.5L15 20l-5-3.5L5 20l1-6.5L1 9l6.5-.5L10 2z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 stroke-gray-600 fill-none" viewBox="0 0 20 20" strokeWidth="2">
+                    <path d="M10 2l2.5 6.5L19 9l-5 4.5L15 20l-5-3.5L5 20l1-6.5L1 9l6.5-.5L10 2z" />
+                  </svg>
+                )}
+              </button>
+              <button
+                onClick={handleWatchlistToggle}
+                className="p-2 rounded-lg bg-white hover:bg-gray-50 transition border border-gray-200"
+                title={isInWatchlist(quizId) ? 'Xóa khỏi watchlist' : 'Thêm vào watchlist'}
+              >
+                {isInWatchlist(quizId) ? (
+                  <svg className="w-5 h-5 fill-red-500" viewBox="0 0 20 20">
+                    <path d="M10 18l-1.45-1.32C3.4 12.36 0 9.28 0 5.5 0 2.42 2.42 0 5.5 0c1.74 0 3.41.81 4.5 2.09C11.09.81 12.76 0 14.5 0 17.58 0 20 2.42 20 5.5c0 3.78-3.4 6.86-8.55 11.18L10 18z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 stroke-gray-600 fill-none" viewBox="0 0 20 20" strokeWidth="2">
+                    <path d="M10 18l-1.45-1.32C3.4 12.36 0 9.28 0 5.5 0 2.42 2.42 0 5.5 0c1.74 0 3.41.81 4.5 2.09C11.09.81 12.76 0 14.5 0 17.58 0 20 2.42 20 5.5c0 3.78-3.4 6.86-8.55 11.18L10 18z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+        
         <div className={`font-mono text-lg px-4 py-1 rounded-full shadow-lg ${timeRemaining < 300 ? 'bg-red-500' : 'bg-green-500'} text-white`}>
           ⏰ {formatTime(timeRemaining)}
         </div>
@@ -215,6 +307,42 @@ export default function QuizPage({ params }) {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 animate-slide-up ${
+          toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`}>
+          <div className="flex items-center gap-2">
+            {toast.type === 'success' ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            )}
+            <span className="font-medium">{toast.message}</span>
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

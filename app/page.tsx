@@ -3,12 +3,23 @@
 // app/page.js
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useAuth } from './contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import LoginModal from './components/LoginModal';
 
 export default function HomePage() {
+  // IMPORTANT: useAuth must be called first, before any other hooks
+  const { user, isBookmarked, addBookmark, removeBookmark, isInWatchlist, addToWatchlist, removeFromWatchlist } = useAuth();
+  const router = useRouter();
+  
   const [categories, setCategories] = useState<any[]>([]);
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -53,6 +64,57 @@ export default function HomePage() {
     setLoading(false);
   };
 
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleBookmarkToggle = async (e: React.MouseEvent, quizId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    try {
+      if (isBookmarked(quizId)) {
+        await removeBookmark(quizId);
+        showToast('Đã xóa khỏi bookmark', 'success');
+      } else {
+        await addBookmark(quizId);
+        showToast('Đã thêm vào bookmark', 'success');
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      showToast('Có lỗi xảy ra', 'error');
+    }
+  };
+
+  const handleWatchlistToggle = async (e: React.MouseEvent, quizId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    try {
+      if (isInWatchlist(quizId)) {
+        await removeFromWatchlist(quizId);
+        showToast('Đã xóa khỏi watchlist', 'success');
+      } else {
+        await addToWatchlist(quizId);
+        showToast('Đã thêm vào watchlist', 'success');
+      }
+    } catch (error) {
+      console.error('Error toggling watchlist:', error);
+      showToast('Có lỗi xảy ra', 'error');
+    }
+  };
+
 
 
 
@@ -84,8 +146,6 @@ export default function HomePage() {
     return categories.filter((cat: any) => cat.parentId === parentId);
   };
 
-  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
-
   const handleParentSelect = (parentId: number) => {
     setSelectedParentId(parentId);
     setSelectedCategoryId(null);
@@ -113,8 +173,63 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800">📚 Hệ Thống Thi Trực Tuyến</h1>
+          
+          {/* User Menu */}
+          <div className="flex items-center gap-3">
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition"
+                >
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="w-8 h-8 rounded-full border-2 border-indigo-200"
+                  />
+                  <span className="font-medium text-gray-700 hidden sm:block">{user.name}</span>
+                  <span className="text-gray-400">▼</span>
+                </button>
+
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border py-2 z-20">
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition"
+                    >
+                      <span>👤</span>
+                      <span>Trang cá nhân</span>
+                    </Link>
+                    <Link
+                      href="/profile?tab=bookmarks"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition"
+                    >
+                      <span>🔖</span>
+                      <span>Bookmarks ({user.bookmarks?.length || 0})</span>
+                    </Link>
+                    <Link
+                      href="/profile?tab=watchlist"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition"
+                    >
+                      <span>👁️</span>
+                      <span>Watchlist ({user.watchlist?.length || 0})</span>
+                    </Link>
+                    <hr className="my-2" />
+                    <LogoutButton />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowLoginModal(true)}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+              >
+                Đăng nhập
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Parent Categories - Horizontal Scroll */}
@@ -206,13 +321,50 @@ export default function HomePage() {
                   className="group bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-indigo-300 flex flex-col"
                 >
                   {/* Card Header */}
-                  <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 text-white">
-                    <div className="flex items-center justify-between mb-2">
-                      {quiz.category && (
-                        <span className="text-2xl">{quiz.category.icon}</span>
-                      )}
-                      {getDifficultyBadge(quiz.difficulty)}
+                  <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 text-white relative">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        {quiz.category && (
+                          <span className="text-2xl">{quiz.category.icon}</span>
+                        )}
+                        {getDifficultyBadge(quiz.difficulty)}
+                      </div>
+                      
+                      {/* Bookmark & Watchlist Icons */}
+                      <div className="flex gap-1.5 flex-shrink-0">
+                        <button
+                          onClick={(e) => handleBookmarkToggle(e, quiz.id)}
+                          className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition backdrop-blur-sm"
+                          title={user?.bookmarks?.includes(quiz.id) ? 'Xóa bookmark' : 'Thêm bookmark'}
+                        >
+                          {user?.bookmarks?.includes(quiz.id) ? (
+                            <svg className="w-4 h-4 fill-yellow-300" viewBox="0 0 20 20">
+                              <path d="M10 2l2.5 6.5L19 9l-5 4.5L15 20l-5-3.5L5 20l1-6.5L1 9l6.5-.5L10 2z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4 stroke-white fill-none" viewBox="0 0 20 20" strokeWidth="2">
+                              <path d="M10 2l2.5 6.5L19 9l-5 4.5L15 20l-5-3.5L5 20l1-6.5L1 9l6.5-.5L10 2z" />
+                            </svg>
+                          )}
+                        </button>
+                        <button
+                          onClick={(e) => handleWatchlistToggle(e, quiz.id)}
+                          className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition backdrop-blur-sm"
+                          title={user?.watchlist?.includes(quiz.id) ? 'Xóa khỏi watchlist' : 'Thêm vào watchlist'}
+                        >
+                          {user?.watchlist?.includes(quiz.id) ? (
+                            <svg className="w-4 h-4 fill-red-400" viewBox="0 0 20 20">
+                              <path d="M10 18l-1.45-1.32C3.4 12.36 0 9.28 0 5.5 0 2.42 2.42 0 5.5 0c1.74 0 3.41.81 4.5 2.09C11.09.81 12.76 0 14.5 0 17.58 0 20 2.42 20 5.5c0 3.78-3.4 6.86-8.55 11.18L10 18z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4 stroke-white fill-none" viewBox="0 0 20 20" strokeWidth="2">
+                              <path d="M10 18l-1.45-1.32C3.4 12.36 0 9.28 0 5.5 0 2.42 2.42 0 5.5 0c1.74 0 3.41.81 4.5 2.09C11.09.81 12.76 0 14.5 0 17.58 0 20 2.42 20 5.5c0 3.78-3.4 6.86-8.55 11.18L10 18z" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
                     </div>
+                    
                     <h3 className="font-bold text-base line-clamp-2 min-h-[2.5rem] group-hover:text-indigo-100 transition">
                       {quiz.name}
                     </h3>
@@ -278,7 +430,64 @@ export default function HomePage() {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out;
+        }
       `}</style>
+
+      {/* Login Modal */}
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 animate-slide-up ${
+          toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`}>
+          <div className="flex items-center gap-2">
+            {toast.type === 'success' ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            )}
+            <span className="font-medium">{toast.message}</span>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+// Logout Button Component
+function LogoutButton() {
+  const { logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    window.location.reload();
+  };
+
+  return (
+    <button
+      onClick={handleLogout}
+      className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 text-red-600 transition w-full text-left"
+    >
+      <span>🚪</span>
+      <span>Đăng xuất</span>
+    </button>
   );
 }
