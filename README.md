@@ -1,4 +1,4 @@
 git status
 git add .
-git commit -m "main"
+git commit -m "categories"
 git push
