@@ -3,6 +3,15 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import {
+  scoreSingleChoice,
+  scoreMultiChoice,
+  scoreTrueFalse,
+  scoreOrdering,
+  scoreMatching,
+  scoreFillBlank,
+  calculateTotalScore
+} from '@/app/utils/scoring';
 
 const dataDir = path.join(process.cwd(), 'app', 'data');
 
@@ -61,49 +70,113 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Template not found' }, { status: 404 });
     }
 
-    // Calculate score
-    let correctCount = 0;
-    const attemptDetails = [];
-
-    for (const [questionIdStr, userAnswer] of Object.entries(answers)) {
-      const questionId = parseInt(questionIdStr);
-      const question = questionBank.find(q => q.id === questionId);
-
-      if (!question) continue;
-
-      let isCorrect = false;
-
-      if (question.type === 'single_choice') {
-        // Single choice: compare single value
-        isCorrect = userAnswer === question.correctOptionId;
-        attemptDetails.push({
-          questionId: questionId,
-          submittedOptionId: userAnswer,
-          isCorrect: isCorrect
-        });
-      } else if (question.type === 'multi_choice') {
-        // Multiple choice: compare arrays
-        const userAnswerArray = Array.isArray(userAnswer) ? userAnswer : [];
-        const correctAnswers = question.correctOptionIds || [];
-        
-        // Check if arrays have same elements (order doesn't matter)
-        isCorrect = userAnswerArray.length === correctAnswers.length &&
-                   userAnswerArray.every(id => correctAnswers.includes(id));
-        
-        attemptDetails.push({
-          questionId: questionId,
-          submittedOptionIds: userAnswerArray,
-          isCorrect: isCorrect
-        });
-      }
-
-      if (isCorrect) {
-        correctCount++;
-      }
+    // Get all question IDs for this quiz
+    let allQuestionIds = [];
+    if (template.questionSelection?.mode === 'manual') {
+      allQuestionIds = template.questionSelection.manualQuestionIds || [];
+    } else if (template.questionSelection?.mode === 'random') {
+      // For random mode, get from what was loaded for this attempt
+      // You may need to get this from quiz start API - for now use attempt.totalQuestions
+      allQuestionIds = Object.keys(answers).map(id => parseInt(id));
     }
 
-    // Calculate percentage
-    const totalQuestions = attempt.totalQuestions;
+    // Calculate score for ALL questions in the quiz (not just answered ones)
+    const questionResults = [];
+
+    for (const questionId of allQuestionIds) {
+      const question = questionBank.find(q => q.id === questionId);
+      if (!question) continue;
+
+      const points = question.points || 1;
+      const userAnswer = answers[questionId.toString()];
+      let scoreResult;
+
+      // If question was not answered, mark as incorrect with 0 score
+      if (userAnswer === undefined || userAnswer === null) {
+        scoreResult = {
+          questionId: 0,
+          isCorrect: false,
+          score: 0,
+          maxScore: points,
+          percentage: 0
+        };
+      } else {
+        switch (question.type) {
+          case 'single_choice':
+            scoreResult = scoreSingleChoice(question.correctOptionId, userAnswer, points);
+            break;
+
+          case 'multi_choice':
+            scoreResult = scoreMultiChoice(
+              question.correctOptionIds || [],
+              Array.isArray(userAnswer) ? userAnswer : [],
+              points
+            );
+            break;
+
+          case 'true_false':
+            scoreResult = scoreTrueFalse(question.correctAnswer, userAnswer, points);
+            break;
+
+          case 'ordering':
+            scoreResult = scoreOrdering(
+              question.correctOrder || [],
+              Array.isArray(userAnswer) ? userAnswer : [],
+              points
+            );
+            break;
+
+          case 'matching':
+            scoreResult = scoreMatching(
+              question.correctMatches || {},
+              typeof userAnswer === 'object' && userAnswer !== null ? userAnswer : {},
+              points
+            );
+            break;
+
+          case 'fill_blank':
+            scoreResult = scoreFillBlank(
+              question.correctAnswers || [],
+              typeof userAnswer === 'string' ? userAnswer : '',
+              question.caseSensitive || false,
+              points
+            );
+            break;
+
+          default:
+            scoreResult = {
+              questionId: 0,
+              isCorrect: false,
+              score: 0,
+              maxScore: points,
+              percentage: 0
+            };
+        }
+      }
+
+      questionResults.push({
+        questionId,
+        userAnswer: userAnswer || null,
+        earnedPoints: scoreResult.score,
+        maxPoints: scoreResult.maxScore,
+        isCorrect: scoreResult.isCorrect
+      });
+    }
+
+    // Convert to format expected by calculateTotalScore
+    const resultsForScoring = questionResults.map(r => ({
+      questionId: r.questionId,
+      isCorrect: r.isCorrect,
+      score: r.earnedPoints,
+      maxScore: r.maxPoints,
+      percentage: r.maxPoints > 0 ? (r.earnedPoints / r.maxPoints) * 100 : 0
+    }));
+
+    // Calculate total score
+    const { totalScore, maxScore, percentage: scorePercentage, correctCount } = calculateTotalScore(resultsForScoring);
+    const totalQuestions = questionResults.length;
+    
+    // Calculate percentage based on correct count (standard quiz grading)
     const percentage = Math.round((correctCount / totalQuestions) * 100);
     const passed = percentage >= template.passingScore;
 
@@ -112,10 +185,12 @@ export async function POST(request) {
       ...attempt,
       endTime: new Date().toISOString(),
       status: 'completed',
-      score: correctCount,
+      score: totalScore,
+      maxScore: maxScore,
       percentage: percentage,
       passed: passed,
-      attemptDetails: attemptDetails
+      correctCount: correctCount,
+      attemptDetails: questionResults
     };
 
     // Save updated attempts
@@ -125,7 +200,9 @@ export async function POST(request) {
 
     return NextResponse.json({
       attemptId: attemptId,
-      score: correctCount,
+      score: totalScore,
+      maxScore: maxScore,
+      correctCount: correctCount,
       totalQuestions: totalQuestions,
       percentage: percentage,
       passed: passed

@@ -4,6 +4,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState, use } from 'react';
+import QuestionRenderer from '@/app/components/QuestionRenderer';
 
 export default function ResultPage({ params }) {
   const unwrappedParams = use(params);
@@ -65,7 +66,10 @@ export default function ResultPage({ params }) {
         <p className="font-semibold">{result.quizTitle}</p>
         
         <p className="text-gray-600">Điểm Số Đạt Được:</p>
-        <p className="text-2xl font-bold text-indigo-600">{result.score} / {result.totalQuestions}</p>
+        <p className="text-2xl font-bold text-indigo-600">
+          {result.score || result.correctCount} / {result.maxScore || result.totalQuestions} 
+          {result.maxScore && ` (${result.correctCount}/${result.totalQuestions} câu đúng)`}
+        </p>
 
         <p className="text-gray-600">Phần Trăm:</p>
         <p className="text-2xl font-bold">{result.percentage}%</p>
@@ -77,7 +81,77 @@ export default function ResultPage({ params }) {
         <p className="font-semibold">{result.durationMinutes} phút</p>
       </div>
 
-      {/* Hiển thị chi tiết đáp án (nếu cấu hình cho phép) */}
+      {/* Hiển thị chi tiết từng câu hỏi */}
+      {result.questions && result.questions.length > 0 && (
+        <div className="mt-8 space-y-6 text-left">
+          <h3 className="text-2xl font-bold text-gray-800">Chi tiết đáp án</h3>
+          {result.questions.map((q, index) => {
+            const attemptDetail = result.attemptDetails?.find(ad => ad.questionId === q.id);
+            const userAnswer = attemptDetail?.userAnswer;
+            const isCorrect = attemptDetail?.isCorrect;
+            
+            // Get correct answer based on question type
+            let correctAnswer;
+            switch (q.type) {
+              case 'single_choice':
+                correctAnswer = q.correctOptionId;
+                break;
+              case 'multi_choice':
+                correctAnswer = q.correctOptionIds || [];
+                break;
+              case 'true_false':
+                correctAnswer = q.correctAnswer;
+                break;
+              case 'ordering':
+                correctAnswer = q.correctOrder || [];
+                break;
+              case 'matching':
+                correctAnswer = q.correctMatches || {};
+                break;
+              case 'fill_blank':
+                correctAnswer = q.correctAnswers || [];
+                break;
+              default:
+                correctAnswer = null;
+            }
+
+            return (
+              <div 
+                key={q.id} 
+                className={`p-6 rounded-lg border-2 ${
+                  isCorrect ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-lg font-semibold">
+                    Câu {index + 1}/{result.questions.length}
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    {attemptDetail?.earnedPoints !== undefined && (
+                      <span className="text-sm font-medium">
+                        {attemptDetail.earnedPoints}/{attemptDetail.maxPoints} điểm
+                      </span>
+                    )}
+                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      isCorrect ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
+                    }`}>
+                      {isCorrect ? '✓ Đúng' : '✗ Sai'}
+                    </span>
+                  </div>
+                </div>
+                
+                <QuestionRenderer
+                  question={q}
+                  userAnswer={userAnswer}
+                  onAnswerChange={() => {}} // Read-only mode
+                  showExplanation={true}
+                  correctAnswer={correctAnswer}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
       <Link 
         href="/" 
         className="mt-8 inline-block bg-indigo-600 text-white px-6 py-3 rounded hover:bg-indigo-700 transition font-medium"

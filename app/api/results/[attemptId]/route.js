@@ -25,6 +25,8 @@ export async function GET(request, { params }) {
     // Load data
     const userAttempts = loadData('userAttempts.json');
     const templates = loadData('quizTemplates.json');
+    const questionBank = loadData('questionBank.json');
+    const questionOptions = loadData('questionOptions.json');
 
     // Find the attempt
     const attempt = userAttempts.find(a => a.id === attemptId);
@@ -49,10 +51,39 @@ export async function GET(request, { params }) {
     const endTime = new Date(attempt.endTime);
     const durationMinutes = Math.round((endTime - startTime) / 1000 / 60);
 
+    // Get question IDs based on selection mode
+    let questionIds = [];
+    if (template.questionSelection?.mode === 'manual') {
+      questionIds = template.questionSelection.manualQuestionIds || [];
+    } else if (template.questionSelection?.mode === 'random') {
+      // For random mode, we need to get the actual questions from the attempt
+      // since they were randomly selected when the quiz started
+      questionIds = attempt.attemptDetails?.map(detail => detail.questionId) || [];
+    } else {
+      // Fallback: try to get from old questionIds field
+      questionIds = template.questionIds || [];
+    }
+
+    // Get full question details with options
+    const questions = questionIds.map(qId => {
+      const question = questionBank.find(q => q.id === qId);
+      if (!question) return null;
+
+      // Add options for single_choice and multi_choice questions
+      if (question.type === 'single_choice' || question.type === 'multi_choice') {
+        const options = questionOptions.filter(opt => opt.questionId === qId);
+        return { ...question, options };
+      }
+
+      return question;
+    }).filter(q => q !== null);
+
     return NextResponse.json({
       attemptId: attempt.id,
       quizTitle: template.name,
       score: attempt.score,
+      maxScore: attempt.maxScore || attempt.totalQuestions,
+      correctCount: attempt.correctCount || attempt.score,
       totalQuestions: attempt.totalQuestions,
       percentage: attempt.percentage,
       passingScore: template.passingScore,
@@ -60,7 +91,8 @@ export async function GET(request, { params }) {
       durationMinutes: durationMinutes,
       startTime: attempt.startTime,
       endTime: attempt.endTime,
-      attemptDetails: template.revealAnswersAfterSubmission ? attempt.attemptDetails : undefined
+      attemptDetails: attempt.attemptDetails || [],
+      questions: template.revealAnswersAfterSubmission ? questions : []
     });
 
   } catch (error) {

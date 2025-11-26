@@ -5,6 +5,7 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
+import QuestionRenderer from '@/app/components/QuestionRenderer';
 
 export default function QuizPage({ params }) {
   const router = useRouter();
@@ -56,18 +57,8 @@ export default function QuizPage({ params }) {
     return () => clearInterval(timer);
   }, [timeRemaining, quizData]);
 
-  const handleAnswerChange = (questionId, optionId, isMultiple) => {
-    if (isMultiple) {
-      setUserAnswers((prev) => {
-        const currentAnswers = prev[questionId] || [];
-        const newAnswers = currentAnswers.includes(optionId)
-          ? currentAnswers.filter(id => id !== optionId)
-          : [...currentAnswers, optionId];
-        return { ...prev, [questionId]: newAnswers };
-      });
-    } else {
-      setUserAnswers((prev) => ({ ...prev, [questionId]: optionId }));
-    }
+  const handleAnswerChange = (questionId, answer) => {
+    setUserAnswers((prev) => ({ ...prev, [questionId]: answer }));
   };
 
   const handleSubmit = async () => {
@@ -227,30 +218,13 @@ export default function QuizPage({ params }) {
       <div className="grid grid-cols-12 gap-6">
         {/* Cột trái: Nội dung Câu hỏi */}
         <div className="col-span-9 bg-white p-6 rounded-lg shadow">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">
-            Câu {currentQuestionIndex + 1}/{quizData.questions.length}: {currentQuestion.text}
-          </h3>
-          {isMultiple && (
-            <p className="text-sm text-gray-600 mb-3">(Chọn nhiều đáp án)</p>
-          )}
-          <div className="space-y-3">
-            {currentQuestion.options.map((option) => (
-              <label
-                key={option.id}
-                className="flex items-center space-x-3 p-3 border rounded-md hover:bg-indigo-50 cursor-pointer"
-              >
-                <input
-                  type={isMultiple ? 'checkbox' : 'radio'}
-                  name={`q_${currentQuestion.id}`}
-                  value={option.id}
-                  checked={isMultiple ? (currentAnswer || []).includes(option.id) : currentAnswer === option.id}
-                  onChange={() => handleAnswerChange(currentQuestion.id, option.id, isMultiple)}
-                  className={`${isMultiple ? 'form-checkbox' : 'form-radio'} text-indigo-600`}
-                />
-                <span className="text-gray-700">{option.text}</span>
-              </label>
-            ))}
-          </div>
+          <QuestionRenderer
+            question={currentQuestion}
+            userAnswer={currentAnswer}
+            onAnswerChange={(answer) => handleAnswerChange(currentQuestion.id, answer)}
+            showExplanation={false}
+            correctAnswer={null}
+          />
           
           <footer className="mt-8 flex justify-between pt-4 border-t">
             <button
