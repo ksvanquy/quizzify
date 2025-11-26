@@ -2,16 +2,17 @@
 
 // app/components/LoginModal.tsx
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialMode?: 'login' | 'register';
 }
 
-export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
-  const [isLogin, setIsLogin] = useState(true);
+export default function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModalProps) {
+  const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -21,6 +22,15 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
+
+  // Update isLogin when initialMode or isOpen changes
+  useEffect(() => {
+    if (isOpen) {
+      setIsLogin(initialMode === 'login');
+      setError('');
+      setFormData({ username: '', email: '', password: '', name: '' });
+    }
+  }, [isOpen, initialMode]);
 
   if (!isOpen) return null;
 
@@ -139,7 +149,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Mật khẩu
+              Mật khẩu {!isLogin && <span className="text-xs text-gray-500">(tối thiểu 6 ký tự)</span>}
             </label>
             <input
               type="password"
@@ -147,6 +157,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               value={formData.password}
               onChange={handleChange}
               required
+              minLength={6}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="••••••••"
             />

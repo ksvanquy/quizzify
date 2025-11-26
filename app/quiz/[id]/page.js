@@ -19,14 +19,32 @@ export default function QuizPage({ params }) {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [toast, setToast] = useState(null);
 
+  // Check authentication before loading quiz
+  useEffect(() => {
+    if (!user) {
+      alert('Bạn cần đăng nhập để làm bài thi.');
+      router.push('/');
+      return;
+    }
+  }, [user, router]);
+
   // Lấy dữ liệu bài thi từ API
   useEffect(() => {
+    if (!user) return; // Don't fetch if not authenticated
+
     async function fetchQuiz() {
       try {
         const response = await fetch(`/api/quizzes/${unwrappedParams.id}`);
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           console.error('API Error:', response.status, errorData);
+          
+          if (response.status === 401) {
+            alert('Bạn cần đăng nhập để làm bài thi.');
+            router.push('/');
+            return;
+          }
+          
           throw new Error(errorData.message || 'Failed to fetch quiz');
         }
         const data = await response.json();
@@ -46,7 +64,7 @@ export default function QuizPage({ params }) {
       }
     }
     fetchQuiz();
-  }, [unwrappedParams.id, router]);
+  }, [unwrappedParams.id, router, user]);
 
   // Timer countdown
   useEffect(() => {

@@ -1,17 +1,28 @@
 // app/api/quizzes/[templateId]/route.js
 
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { loadData, shuffleArray } from './utils/data'; // Import các hàm hỗ trợ
 import fs from 'fs';
 import path from 'path';
-
-// Giả định userId được truyền qua Header hoặc Session (để đơn giản, ta dùng ID cứng)
-const MOCK_USER_ID = 1; 
 
 export async function GET(request, { params }) {
   try {
     const { templateId: templateIdParam } = await params;
     const templateId = parseInt(templateIdParam);
+
+    // Check authentication
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session');
+
+    if (!sessionCookie) {
+      return NextResponse.json({ 
+        message: 'Bạn cần đăng nhập để làm bài thi.' 
+      }, { status: 401 });
+    }
+
+    const session = JSON.parse(sessionCookie.value);
+    const userId = session.userId;
 
     // 1. Tải Dữ Liệu
     const templates = loadData('quizTemplates.json');
@@ -30,7 +41,7 @@ export async function GET(request, { params }) {
 
     // 2. Kiểm tra giới hạn số lần làm bài (maxAttempts)
     const userAttemptsCount = userAttempts.filter(
-      attempt => attempt.userId === MOCK_USER_ID && attempt.templateId === templateId && attempt.status === 'completed'
+      attempt => attempt.userId === userId && attempt.templateId === templateId && attempt.status === 'completed'
     ).length;
 
     console.log('User completed attempts:', userAttemptsCount, 'Max allowed:', template.maxAttempts);
@@ -121,7 +132,7 @@ export async function GET(request, { params }) {
     const newAttemptId = Math.max(...userAttempts.map(a => a.id), 0) + 1;
     const newAttempt = {
         id: newAttemptId,
-        userId: MOCK_USER_ID,
+        userId: userId,
         templateId: templateId,
         startTime: new Date().toISOString(),
         status: 'in_progress',

@@ -18,8 +18,10 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginModalMode, setLoginModalMode] = useState<'login' | 'register'>('login');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [userAttempts, setUserAttempts] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -40,6 +42,19 @@ export default function HomePage() {
           }
         }
         
+        // Fetch user attempts nếu đã đăng nhập
+        if (user) {
+          try {
+            const attemptsRes = await fetch('/api/user/attempts');
+            if (attemptsRes.ok) {
+              const attemptsData = await attemptsRes.json();
+              setUserAttempts(attemptsData);
+            }
+          } catch (err) {
+            console.error('Error fetching attempts:', err);
+          }
+        }
+        
         setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -47,7 +62,7 @@ export default function HomePage() {
       }
     }
     fetchData();
-  }, []);
+  }, [user]);
 
   const handleCategoryClick = async (categoryId: number) => {
     setSelectedCategoryId(categoryId);
@@ -74,6 +89,7 @@ export default function HomePage() {
     e.stopPropagation();
     
     if (!user) {
+      setLoginModalMode('login');
       setShowLoginModal(true);
       return;
     }
@@ -97,6 +113,7 @@ export default function HomePage() {
     e.stopPropagation();
     
     if (!user) {
+      setLoginModalMode('login');
       setShowLoginModal(true);
       return;
     }
@@ -135,6 +152,25 @@ export default function HomePage() {
         {labels[difficulty] || difficulty}
       </span>
     );
+  };
+
+  const getUserAttemptInfo = (templateId: number) => {
+    return userAttempts.find((a: any) => a.templateId === templateId);
+  };
+
+  const canAttemptQuiz = (quiz: any) => {
+    if (quiz.maxAttempts === 0) return { canAttempt: true };
+    
+    const attemptInfo = getUserAttemptInfo(quiz.id);
+    if (!attemptInfo) return { canAttempt: true };
+    
+    const canAttempt = attemptInfo.completedCount < quiz.maxAttempts;
+    return {
+      canAttempt,
+      completedCount: attemptInfo.completedCount,
+      maxAttempts: quiz.maxAttempts,
+      bestScore: attemptInfo.bestScore
+    };
   };
 
   // Get parent categories and their children
@@ -222,12 +258,26 @@ export default function HomePage() {
                 )}
               </div>
             ) : (
-              <button
-                onClick={() => setShowLoginModal(true)}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
-              >
-                Đăng nhập
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setLoginModalMode('login');
+                    setShowLoginModal(true);
+                  }}
+                  className="px-6 py-2 bg-white text-indigo-600 border-2 border-indigo-600 rounded-lg hover:bg-indigo-50 transition font-medium"
+                >
+                  Đăng nhập
+                </button>
+                <button
+                  onClick={() => {
+                    setLoginModalMode('register');
+                    setShowLoginModal(true);
+                  }}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                >
+                  Đăng ký
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -314,11 +364,25 @@ export default function HomePage() {
               Hiển thị <span className="font-semibold">{quizzes.length}</span> bài thi
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-              {quizzes.map((quiz: any) => (
+              {quizzes.map((quiz: any) => {
+                const attemptStatus = user ? canAttemptQuiz(quiz) : { canAttempt: true };
+                const attemptInfo = user ? getUserAttemptInfo(quiz.id) : null;
+                
+                return (
                 <Link
                   key={quiz.id}
-                  href={`/quiz/${quiz.id}`}
-                  className="group bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-indigo-300 flex flex-col"
+                  href={attemptStatus.canAttempt ? `/quiz/${quiz.id}` : '#'}
+                  onClick={(e) => {
+                    if (!attemptStatus.canAttempt) {
+                      e.preventDefault();
+                      alert(`Bạn đã hết số lần làm bài cho bài thi này. Đã làm: ${attemptStatus.completedCount}/${attemptStatus.maxAttempts} lần.`);
+                    }
+                  }}
+                  className={`group bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border flex flex-col ${
+                    attemptStatus.canAttempt 
+                      ? 'border-gray-200 hover:border-indigo-300' 
+                      : 'border-red-200 opacity-75 cursor-not-allowed'
+                  }`}
                 >
                   {/* Card Header */}
                   <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 text-white relative">
@@ -393,6 +457,22 @@ export default function HomePage() {
                           <span>Điểm đạt: {quiz.passingScore}%</span>
                         </div>
                       )}
+                      
+                      {/* User attempt status */}
+                      {user && attemptInfo && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <span>✅</span>
+                            <span>Đã làm: {attemptInfo.completedCount}{quiz.maxAttempts > 0 ? `/${quiz.maxAttempts}` : ''} lần</span>
+                          </div>
+                          {attemptInfo.bestScore > 0 && (
+                            <div className="flex items-center gap-2">
+                              <span>⭐</span>
+                              <span>Điểm cao nhất: {attemptInfo.bestScore}%</span>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
 
                     {quiz.tags && quiz.tags.length > 0 && (
@@ -411,12 +491,19 @@ export default function HomePage() {
 
                   {/* Card Footer */}
                   <div className="px-4 pb-4">
-                    <div className="bg-indigo-600 text-white text-center py-2 rounded-lg font-medium text-sm group-hover:bg-indigo-700 transition">
-                      Bắt Đầu Thi →
-                    </div>
+                    {attemptStatus.canAttempt ? (
+                      <div className="bg-indigo-600 text-white text-center py-2 rounded-lg font-medium text-sm group-hover:bg-indigo-700 transition">
+                        Bắt Đầu Thi →
+                      </div>
+                    ) : (
+                      <div className="bg-red-500 text-white text-center py-2 rounded-lg font-medium text-sm cursor-not-allowed">
+                        ❌ Đã hết lượt
+                      </div>
+                    )}
                   </div>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           </>
         )}
@@ -446,7 +533,11 @@ export default function HomePage() {
       `}</style>
 
       {/* Login Modal */}
-      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+        initialMode={loginModalMode}
+      />
 
       {/* Toast Notification */}
       {toast && (

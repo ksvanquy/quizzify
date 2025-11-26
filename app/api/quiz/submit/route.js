@@ -45,6 +45,20 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
     }
 
+    // Check authentication
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session');
+
+    if (!sessionCookie) {
+      return NextResponse.json({ 
+        message: 'Bạn cần đăng nhập để nộp bài.' 
+      }, { status: 401 });
+    }
+
+    const session = JSON.parse(sessionCookie.value);
+    const userId = session.userId;
+
     // Load data
     const userAttempts = loadData('userAttempts.json');
     const questionBank = loadData('questionBank.json');
@@ -58,6 +72,13 @@ export async function POST(request) {
     }
 
     const attempt = userAttempts[attemptIndex];
+
+    // Verify attempt belongs to the authenticated user
+    if (attempt.userId !== userId) {
+      return NextResponse.json({ 
+        message: 'Bạn không có quyền nộp bài thi này.' 
+      }, { status: 403 });
+    }
     
     if (attempt.status !== 'in_progress') {
       return NextResponse.json({ message: 'This attempt is already completed' }, { status: 400 });
