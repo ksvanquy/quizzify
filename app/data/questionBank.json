@@ -83,46 +83,139 @@
   },
   {
     "id": 108,
-    "text": "Kéo thả để sắp xếp đúng thứ tự vòng đời React component",
+    "text": "Sắp xếp đúng thứ tự vòng đời React component",
     "type": "ordering",
     "topic": "React_Lifecycle",
     "difficulty": "medium",
     "points": 2,
     "shuffleOptions": true,
     "items": [
-      { "id": "item1", "text": "componentDidMount", "correctOrder": 2 },
-      { "id": "item2", "text": "constructor", "correctOrder": 1 },
-      { "id": "item3", "text": "render", "correctOrder": 3 },
-      { "id": "item4", "text": "componentWillUnmount", "correctOrder": 4 }
+      "constructor",
+      "componentDidMount",
+      "render",
+      "componentWillUnmount"
     ],
-    "explanation": "Thứ tự: constructor → componentDidMount → render → componentWillUnmount"
+    "correctOrder": [
+      "constructor",
+      "componentDidMount",
+      "render",
+      "componentWillUnmount"
+    ],
+    "explanation": "Thứ tự đúng: constructor (khởi tạo) → componentDidMount (sau khi mount) → render (hiển thị) → componentWillUnmount (trước khi unmount)"
   },
   {
     "id": 109,
-    "text": "Nối các khái niệm React với định nghĩa đúng",
+    "text": "Nối các React Hooks với chức năng tương ứng",
     "type": "matching",
     "topic": "React_Concepts",
     "difficulty": "hard",
     "points": 3,
     "shuffleOptions": true,
     "pairs": [
-      { "id": "pair1", "left": "useState", "right": "Quản lý state đơn giản", "leftId": "left1", "rightId": "right1" },
-      { "id": "pair2", "left": "useEffect", "right": "Side effects và lifecycle", "leftId": "left2", "rightId": "right2" },
-      { "id": "pair3", "left": "useContext", "right": "Chia sẻ data giữa components", "leftId": "left3", "rightId": "right3" },
-      { "id": "pair4", "left": "useMemo", "right": "Tối ưu tính toán phức tạp", "leftId": "left4", "rightId": "right4" }
+      { "left": "useState", "right": "Quản lý state đơn giản" },
+      { "left": "useEffect", "right": "Side effects và lifecycle" },
+      { "left": "useContext", "right": "Chia sẻ data giữa components" },
+      { "left": "useMemo", "right": "Tối ưu tính toán phức tạp" }
     ],
-    "explanation": "Mỗi hook có vai trò riêng trong việc quản lý state và side effects."
+    "correctMatches": {
+      "useState": "Quản lý state đơn giản",
+      "useEffect": "Side effects và lifecycle",
+      "useContext": "Chia sẻ data giữa components",
+      "useMemo": "Tối ưu tính toán phức tạp"
+    },
+    "explanation": "useState cho state management, useEffect cho side effects, useContext cho context API, useMemo cho performance optimization."
   },
   {
     "id": 110,
-    "text": "Điền vào chỗ trống: React sử dụng _____ DOM để tối ưu hiệu suất",
+    "text": "React sử dụng _____ DOM để tối ưu hiệu suất rendering",
     "type": "fill_blank",
     "topic": "React_Fundamentals",
     "difficulty": "easy",
     "points": 1,
     "shuffleOptions": false,
-    "correctAnswers": ["Virtual", "virtual", "VIRTUAL"],
+    "correctAnswers": ["Virtual", "virtual", "VIRTUAL", "Virtual DOM", "virtual dom"],
     "caseSensitive": false,
-    "explanation": "React sử dụng Virtual DOM để so sánh và chỉ update những phần thay đổi trên Real DOM."
+    "explanation": "React sử dụng Virtual DOM - một bản sao lightweight của Real DOM để tính toán sự khác biệt và chỉ update những phần thay đổi."
+  },
+  {
+    "id": 111,
+    "text": "Next.js có thể render cả Client-side và Server-side",
+    "type": "true_false",
+    "topic": "Nextjs_Rendering",
+    "difficulty": "easy",
+    "points": 1,
+    "shuffleOptions": false,
+    "correctAnswer": true,
+    "explanation": "Next.js hỗ trợ hybrid rendering - vừa SSR/SSG (server-side) vừa CSR (client-side) trong cùng một ứng dụng."
+  },
+  {
+    "id": 112,
+    "text": "Sắp xếp các bước trong quy trình Next.js SSR",
+    "type": "ordering",
+    "topic": "Nextjs_Rendering",
+    "difficulty": "hard",
+    "points": 3,
+    "shuffleOptions": true,
+    "items": [
+      "User gửi request",
+      "Server fetch data",
+      "Server render HTML",
+      "HTML gửi về client",
+      "Hydration xảy ra"
+    ],
+    "correctOrder": [
+      "User gửi request",
+      "Server fetch data",
+      "Server render HTML",
+      "HTML gửi về client",
+      "Hydration xảy ra"
+    ],
+    "explanation": "SSR flow: Request → Fetch data on server → Render HTML → Send to client → Hydrate để React có thể interactive."
+  },
+  {
+    "id": 113,
+    "text": "Chọn các HTTP methods thường dùng trong REST API",
+    "type": "multi_choice",
+    "topic": "API_Routes",
+    "difficulty": "easy",
+    "points": 2,
+    "shuffleOptions": true,
+    "answerOptionIds": [1021, 1022, 1023, 1024, 1025],
+    "correctOptionIds": [1021, 1022, 1023, 1024],
+    "explanation": "REST API thường dùng GET (read), POST (create), PUT/PATCH (update), DELETE (delete). CONNECT không phải REST method."
+  },
+  {
+    "id": 114,
+    "text": "Trong Next.js App Router, file _____ được dùng để tạo API endpoint",
+    "type": "fill_blank",
+    "topic": "API_Routes",
+    "difficulty": "medium",
+    "points": 2,
+    "shuffleOptions": false,
+    "correctAnswers": ["route.js", "route.ts", "route"],
+    "caseSensitive": false,
+    "explanation": "Trong App Router (Next.js 13+), file route.js hoặc route.ts được dùng để tạo API routes thay vì pages/api/."
+  },
+  {
+    "id": 115,
+    "text": "Nối các khái niệm Next.js với ý nghĩa",
+    "type": "matching",
+    "topic": "Nextjs_Fundamentals",
+    "difficulty": "medium",
+    "points": 2,
+    "shuffleOptions": true,
+    "pairs": [
+      { "left": "SSR", "right": "Render on every request" },
+      { "left": "SSG", "right": "Render at build time" },
+      { "left": "ISR", "right": "Regenerate after interval" },
+      { "left": "CSR", "right": "Render on client browser" }
+    ],
+    "correctMatches": {
+      "SSR": "Render on every request",
+      "SSG": "Render at build time",
+      "ISR": "Regenerate after interval",
+      "CSR": "Render on client browser"
+    },
+    "explanation": "SSR (mỗi request), SSG (lúc build), ISR (revalidate sau khoảng thời gian), CSR (trên browser)."
   }
 ]

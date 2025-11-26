@@ -22,5 +22,11 @@
   { "id": 1017, "questionId": 105, "text": "getStaticProps", "isCorrect": true },
   { "id": 1018, "questionId": 105, "text": "getServerSideProps", "isCorrect": false },
   { "id": 1019, "questionId": 105, "text": "getInitialProps", "isCorrect": false },
-  { "id": 1020, "questionId": 105, "text": "getStaticPaths", "isCorrect": false }
+  { "id": 1020, "questionId": 105, "text": "getStaticPaths", "isCorrect": false },
+
+  { "id": 1021, "questionId": 113, "text": "GET", "isCorrect": true },
+  { "id": 1022, "questionId": 113, "text": "POST", "isCorrect": true },
+  { "id": 1023, "questionId": 113, "text": "PUT", "isCorrect": true },
+  { "id": 1024, "questionId": 113, "text": "DELETE", "isCorrect": true },
+  { "id": 1025, "questionId": 113, "text": "CONNECT", "isCorrect": false }
 ]

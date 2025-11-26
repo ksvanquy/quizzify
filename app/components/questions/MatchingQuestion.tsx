@@ -2,19 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 
-interface MatchPair {
-  id: string;
-  left: string;
-  right: string;
-  leftId: string;
-  rightId: string;
-}
-
 interface MatchingQuestionProps {
   question: {
     id: number;
     text: string;
-    pairs: MatchPair[];
+    leftItems: string[]; // From API
+    rightItems: string[]; // From API
     explanation?: string;
     shuffleOptions?: boolean;
   };
@@ -31,23 +24,18 @@ export default function MatchingQuestion({
   showExplanation = false,
   correctMatches
 }: MatchingQuestionProps) {
-  const [leftItems, setLeftItems] = useState<Array<{ id: string; text: string }>>([]);
-  const [rightItems, setRightItems] = useState<Array<{ id: string; text: string }>>([]);
+  const [leftItems, setLeftItems] = useState<string[]>([]);
+  const [rightItems, setRightItems] = useState<string[]>([]);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
   useEffect(() => {
-    const left = question.pairs.map(p => ({ id: p.leftId, text: p.left }));
-    const right = question.pairs.map(p => ({ id: p.rightId, text: p.right }));
+    // Use items directly from question (already shuffled by API if needed)
+    setLeftItems(question.leftItems || []);
+    setRightItems(question.rightItems || []);
+  }, [question.leftItems, question.rightItems]);
 
-    setLeftItems(left);
-    setRightItems(question.shuffleOptions 
-      ? [...right].sort(() => Math.random() - 0.5)
-      : right
-    );
-  }, [question.pairs, question.shuffleOptions]);
-
-  const handleDragStart = (e: React.DragEvent, rightId: string) => {
-    setDraggedItem(rightId);
+  const handleDragStart = (e: React.DragEvent, rightItem: string) => {
+    setDraggedItem(rightItem);
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -56,7 +44,7 @@ export default function MatchingQuestion({
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e: React.DragEvent, leftId: string) => {
+  const handleDrop = (e: React.DragEvent, leftItem: string) => {
     e.preventDefault();
     
     if (!draggedItem) return;
@@ -71,31 +59,30 @@ export default function MatchingQuestion({
     });
 
     // Add new match
-    newMatches[leftId] = draggedItem;
+    newMatches[leftItem] = draggedItem;
 
     onAnswerChange(newMatches);
     setDraggedItem(null);
   };
 
-  const handleRemoveMatch = (leftId: string) => {
+  const handleRemoveMatch = (leftItem: string) => {
     const newMatches = { ...selectedMatches };
-    delete newMatches[leftId];
+    delete newMatches[leftItem];
     onAnswerChange(newMatches);
   };
 
-  const isCorrectMatch = (leftId: string) => {
+  const isCorrectMatch = (leftItem: string) => {
     if (!correctMatches) return null;
-    return selectedMatches[leftId] === correctMatches[leftId];
+    return selectedMatches[leftItem] === correctMatches[leftItem];
   };
 
-  const getMatchedRightItem = (leftId: string) => {
-    const rightId = selectedMatches[leftId];
-    return rightItems.find(item => item.id === rightId);
+  const getMatchedRightItem = (leftItem: string) => {
+    return selectedMatches[leftItem];
   };
 
   const getUnmatchedRightItems = () => {
-    const matchedIds = Object.values(selectedMatches);
-    return rightItems.filter(item => !matchedIds.includes(item.id));
+    const matchedValues = Object.values(selectedMatches);
+    return rightItems.filter(item => !matchedValues.includes(item));
   };
 
   return (
@@ -110,15 +97,15 @@ export default function MatchingQuestion({
         {/* Left Column */}
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-700 mb-2">Khái niệm</h4>
-          {leftItems.map((leftItem) => {
-            const matchedRight = getMatchedRightItem(leftItem.id);
-            const correct = showExplanation ? isCorrectMatch(leftItem.id) : null;
+          {leftItems.map((leftItem, index) => {
+            const matchedRight = getMatchedRightItem(leftItem);
+            const correct = showExplanation ? isCorrectMatch(leftItem) : null;
 
             return (
               <div
-                key={leftItem.id}
+                key={`${question.id}-left-${leftItem}-${index}`}
                 onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, leftItem.id)}
+                onDrop={(e) => handleDrop(e, leftItem)}
                 className={`p-4 rounded-lg border-2 transition ${
                   showExplanation
                     ? correct
@@ -128,7 +115,7 @@ export default function MatchingQuestion({
                 }`}
               >
                 <div className="font-medium text-gray-800 mb-2">
-                  {leftItem.text}
+                  {leftItem}
                 </div>
                 
                 {matchedRight ? (
@@ -139,10 +126,10 @@ export default function MatchingQuestion({
                         : 'bg-red-100 border-red-300'
                       : 'bg-indigo-100 border-indigo-300'
                   }`}>
-                    <span className="text-sm">{matchedRight.text}</span>
+                    <span className="text-sm">{matchedRight}</span>
                     {!showExplanation && (
                       <button
-                        onClick={() => handleRemoveMatch(leftItem.id)}
+                        onClick={() => handleRemoveMatch(leftItem)}
                         className="text-red-500 hover:text-red-700 ml-2"
                       >
                         ✕
@@ -167,18 +154,18 @@ export default function MatchingQuestion({
         {/* Right Column */}
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-700 mb-2">Định nghĩa</h4>
-          {getUnmatchedRightItems().map((rightItem) => (
+          {getUnmatchedRightItems().map((rightItem, index) => (
             <div
-              key={rightItem.id}
+              key={`${question.id}-right-${rightItem}-${index}`}
               draggable={!showExplanation}
-              onDragStart={(e) => handleDragStart(e, rightItem.id)}
+              onDragStart={(e) => handleDragStart(e, rightItem)}
               className={`p-4 rounded-lg border-2 transition ${
-                draggedItem === rightItem.id
+                draggedItem === rightItem
                   ? 'opacity-50 border-indigo-400'
                   : 'border-indigo-300 bg-white hover:border-indigo-500 cursor-move'
               }`}
             >
-              <div className="text-gray-800">{rightItem.text}</div>
+              <div className="text-gray-800">{rightItem}</div>
             </div>
           ))}
           {getUnmatchedRightItems().length === 0 && (

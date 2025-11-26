@@ -72,21 +72,49 @@ export async function GET(request, { params }) {
 
     // 4. Chuẩn bị dữ liệu cho Frontend (Lọc đáp án đúng và Ghép nối options)
     const quizDataForClient = selectedQuestions.map(q => {
-      // Lấy các options (lựa chọn) cho câu hỏi này
-      const options = questionOptions
-        .filter(opt => q.answerOptionIds.includes(opt.id))
-        .map(opt => ({ id: opt.id, text: opt.text })); // Chỉ gửi ID và TEXT
-        
-      // Xáo trộn thứ tự Options (tùy chọn)
-      shuffleArray(options);
-
-      return {
+      const questionData = {
         id: q.id,
         text: q.text,
         type: q.type,
-        options: options, // Đã được ghép nối và lọc
-        // KHÔNG BAO GỒM correctOptionId/correctOptionIds
+        points: q.points || 1
       };
+
+      // Xử lý theo từng loại câu hỏi
+      if (q.type === 'single_choice' || q.type === 'multi_choice') {
+        // Lấy options cho single/multi choice
+        const options = questionOptions
+          .filter(opt => q.answerOptionIds && q.answerOptionIds.includes(opt.id))
+          .map(opt => ({ id: opt.id, text: opt.text }));
+        
+        // Xáo trộn nếu cần
+        if (q.shuffleOptions) {
+          shuffleArray(options);
+        }
+        
+        questionData.options = options;
+      } else if (q.type === 'true_false') {
+        // True/False không cần options
+        // correctAnswer sẽ được giữ bí mật
+      } else if (q.type === 'ordering') {
+        // Gửi items nhưng xáo trộn thứ tự
+        const items = q.shuffleOptions ? shuffleArray([...q.items]) : q.items;
+        questionData.items = items;
+      } else if (q.type === 'matching') {
+        // Gửi pairs nhưng xáo trộn
+        const pairs = q.pairs || [];
+        if (q.shuffleOptions) {
+          questionData.leftItems = shuffleArray(pairs.map(p => p.left));
+          questionData.rightItems = shuffleArray(pairs.map(p => p.right));
+        } else {
+          questionData.leftItems = pairs.map(p => p.left);
+          questionData.rightItems = pairs.map(p => p.right);
+        }
+      } else if (q.type === 'fill_blank') {
+        // Fill blank chỉ cần text, không cần gửi correctAnswers
+        questionData.caseSensitive = q.caseSensitive || false;
+      }
+
+      return questionData;
     });
   
     // 5. Ghi nhận Bài thi đang làm (`in_progress`)

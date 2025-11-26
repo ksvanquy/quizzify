@@ -79,5 +79,43 @@
       "mode": "manual",
       "manualQuestionIds": [101, 103]
     }
+  },
+  {
+    "id": 5,
+    "name": "Test Tất Cả Loại Câu Hỏi",
+    "slug": "test-all-question-types",
+    "categoryId": 3,
+    "status": "active",
+    "difficulty": "medium",
+    "durationMinutes": 20,
+    "maxAttempts": 0,
+    "shuffleQuestions": false,
+    "revealAnswersAfterSubmission": true,
+    "passingScore": 60,
+    "description": "Quiz demo với đầy đủ 6 loại câu hỏi: Single Choice, Multi Choice, True/False, Ordering, Matching, Fill in the Blank",
+    "tags": ["demo", "test", "all-types"],
+    "questionSelection": {
+      "mode": "manual",
+      "manualQuestionIds": [101, 102, 106, 108, 109, 110]
+    }
+  },
+  {
+    "id": 6,
+    "name": "React & Next.js Nâng Cao",
+    "slug": "react-nextjs-advanced",
+    "categoryId": 3,
+    "status": "active",
+    "difficulty": "hard",
+    "durationMinutes": 30,
+    "maxAttempts": 3,
+    "shuffleQuestions": true,
+    "revealAnswersAfterSubmission": true,
+    "passingScore": 70,
+    "description": "Kiểm tra kiến thức nâng cao về React và Next.js với các loại câu hỏi đa dạng",
+    "tags": ["react", "nextjs", "advanced", "hooks"],
+    "questionSelection": {
+      "mode": "manual",
+      "manualQuestionIds": [103, 107, 108, 109, 111, 112, 113, 114, 115]
+    }
   }
 ]

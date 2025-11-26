@@ -25,15 +25,23 @@ export default function QuizPage({ params }) {
       try {
         const response = await fetch(`/api/quizzes/${unwrappedParams.id}`);
         if (!response.ok) {
-          throw new Error('Failed to fetch quiz');
+          const errorData = await response.json().catch(() => ({}));
+          console.error('API Error:', response.status, errorData);
+          throw new Error(errorData.message || 'Failed to fetch quiz');
         }
         const data = await response.json();
+        console.log('Quiz data loaded:', data);
+        
+        if (!data.questions || data.questions.length === 0) {
+          throw new Error('No questions found in quiz');
+        }
+        
         setQuizData(data);
         setTimeRemaining(data.duration * 60); // Convert to seconds
         setLoading(false);
       } catch (error) {
         console.error('Error fetching quiz:', error);
-        alert('Không thể tải bài thi. Vui lòng thử lại.');
+        alert(`Không thể tải bài thi: ${error.message}`);
         router.push('/');
       }
     }

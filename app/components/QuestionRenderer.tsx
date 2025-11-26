@@ -137,9 +137,8 @@ export default function QuestionRenderer({
 
   // Ordering Question
   if (questionType === 'ordering') {
-    const correctOrder = question.items
-      .sort((a: any, b: any) => a.correctOrder - b.correctOrder)
-      .map((item: any) => item.id);
+    // correctAnswer is already in the right format: string[]
+    const correctOrder = correctAnswer as string[] | undefined;
     
     return (
       <OrderingQuestion
@@ -154,10 +153,8 @@ export default function QuestionRenderer({
 
   // Matching Question
   if (questionType === 'matching') {
-    const correctMatches: Record<string, string> = {};
-    question.pairs.forEach((pair: any) => {
-      correctMatches[pair.leftId] = pair.rightId;
-    });
+    // correctAnswer is already in the right format: Record<string, string>
+    const correctMatches = correctAnswer as Record<string, string> | undefined;
     
     return (
       <MatchingQuestion

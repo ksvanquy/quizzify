@@ -2,17 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 
-interface OrderItem {
-  id: string;
-  text: string;
-  correctOrder: number;
-}
-
 interface OrderingQuestionProps {
   question: {
     id: number;
     text: string;
-    items: OrderItem[];
+    items: string[]; // Array of strings from API
     explanation?: string;
     shuffleOptions?: boolean;
   };
@@ -29,22 +23,19 @@ export default function OrderingQuestion({
   showExplanation = false,
   correctOrder
 }: OrderingQuestionProps) {
-  const [items, setItems] = useState<OrderItem[]>([]);
+  const [items, setItems] = useState<string[]>([]);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
   useEffect(() => {
-    // Shuffle items if needed
-    const sortedItems = question.shuffleOptions
-      ? [...question.items].sort(() => Math.random() - 0.5)
-      : [...question.items];
-    
-    setItems(sortedItems);
+    // Use items directly from question (already shuffled by API if needed)
+    const itemsList = question.items || [];
+    setItems(itemsList);
     
     // Initialize selected order if empty
-    if (selectedOrder.length === 0) {
-      onAnswerChange(sortedItems.map(item => item.id));
+    if (selectedOrder.length === 0 && itemsList.length > 0) {
+      onAnswerChange([...itemsList]);
     }
-  }, [question.items, question.shuffleOptions]);
+  }, [question.items]);
 
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
     setDraggedItem(itemId);
@@ -84,9 +75,7 @@ export default function OrderingQuestion({
     return currentIndex === correctIndex;
   };
 
-  const orderedItems = selectedOrder
-    .map(id => items.find(item => item.id === id))
-    .filter(Boolean) as OrderItem[];
+  const orderedItems = selectedOrder.filter(item => items.includes(item));
 
   return (
     <div className="space-y-4">
@@ -98,17 +87,17 @@ export default function OrderingQuestion({
 
       <div className="space-y-2">
         {orderedItems.map((item, index) => {
-          const correctPosition = showExplanation ? isCorrectPosition(item.id) : null;
+          const correctPosition = showExplanation ? isCorrectPosition(item) : null;
           
           return (
             <div
-              key={item.id}
+              key={`${question.id}-${item}-${index}`}
               draggable={!showExplanation}
-              onDragStart={(e) => handleDragStart(e, item.id)}
+              onDragStart={(e) => handleDragStart(e, item)}
               onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, item.id)}
+              onDrop={(e) => handleDrop(e, item)}
               className={`flex items-center gap-3 p-4 rounded-lg border-2 transition cursor-move ${
-                draggedItem === item.id
+                draggedItem === item
                   ? 'opacity-50 border-indigo-400'
                   : showExplanation
                   ? correctPosition
@@ -117,6 +106,13 @@ export default function OrderingQuestion({
                   : 'border-gray-300 hover:border-indigo-300 bg-white'
               }`}
             >
+              {!showExplanation && (
+                <div className="flex-shrink-0 mr-2 text-gray-400 cursor-move">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z"></path>
+                  </svg>
+                </div>
+              )}
               <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold ${
                 showExplanation
                   ? correctPosition
@@ -128,7 +124,7 @@ export default function OrderingQuestion({
               </div>
               
               <div className="flex-1">
-                <p className="text-gray-800">{item.text}</p>
+                <p className="text-gray-800">{item}</p>
               </div>
 
               {showExplanation && (
