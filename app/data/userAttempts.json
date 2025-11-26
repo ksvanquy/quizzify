@@ -2877,5 +2877,261 @@
     "status": "in_progress",
     "totalQuestions": 9,
     "attemptDetails": []
+  },
+  {
+    "id": 5212,
+    "userId": 5,
+    "templateId": 4,
+    "startTime": "2025-11-26T09:16:13.940Z",
+    "status": "in_progress",
+    "totalQuestions": 2,
+    "attemptDetails": []
+  },
+  {
+    "id": 5213,
+    "userId": 5,
+    "templateId": 4,
+    "startTime": "2025-11-26T09:16:13.957Z",
+    "status": "in_progress",
+    "totalQuestions": 2,
+    "attemptDetails": []
+  },
+  {
+    "id": 5214,
+    "userId": 5,
+    "templateId": 2,
+    "startTime": "2025-11-26T09:16:16.182Z",
+    "status": "in_progress",
+    "totalQuestions": 4,
+    "attemptDetails": []
+  },
+  {
+    "id": 5215,
+    "userId": 5,
+    "templateId": 2,
+    "startTime": "2025-11-26T09:16:16.201Z",
+    "status": "in_progress",
+    "totalQuestions": 4,
+    "attemptDetails": []
+  },
+  {
+    "id": 5216,
+    "userId": 5,
+    "templateId": 1,
+    "startTime": "2025-11-26T09:16:18.244Z",
+    "status": "in_progress",
+    "totalQuestions": 11,
+    "attemptDetails": []
+  },
+  {
+    "id": 5217,
+    "userId": 5,
+    "templateId": 1,
+    "startTime": "2025-11-26T09:16:18.262Z",
+    "status": "in_progress",
+    "totalQuestions": 11,
+    "attemptDetails": []
+  },
+  {
+    "id": 5218,
+    "userId": 5,
+    "templateId": 1,
+    "startTime": "2025-11-26T09:16:20.742Z",
+    "status": "in_progress",
+    "totalQuestions": 11,
+    "attemptDetails": []
+  },
+  {
+    "id": 5219,
+    "userId": 5,
+    "templateId": 1,
+    "startTime": "2025-11-26T09:16:20.761Z",
+    "status": "in_progress",
+    "totalQuestions": 11,
+    "attemptDetails": []
+  },
+  {
+    "id": 5220,
+    "userId": 5,
+    "templateId": 1,
+    "startTime": "2025-11-26T09:16:26.097Z",
+    "status": "in_progress",
+    "totalQuestions": 11,
+    "attemptDetails": []
+  },
+  {
+    "id": 5221,
+    "userId": 5,
+    "templateId": 1,
+    "startTime": "2025-11-26T09:16:26.116Z",
+    "status": "completed",
+    "totalQuestions": 11,
+    "attemptDetails": [],
+    "endTime": "2025-11-26T09:16:28.435Z",
+    "score": 0,
+    "maxScore": 0,
+    "percentage": null,
+    "passed": false,
+    "correctCount": 0
+  },
+  {
+    "id": 5222,
+    "userId": 5,
+    "templateId": 1,
+    "startTime": "2025-11-26T09:16:29.458Z",
+    "status": "in_progress",
+    "totalQuestions": 11,
+    "attemptDetails": []
+  },
+  {
+    "id": 5223,
+    "userId": 5,
+    "templateId": 1,
+    "startTime": "2025-11-26T09:16:29.476Z",
+    "status": "in_progress",
+    "totalQuestions": 11,
+    "attemptDetails": []
+  },
+  {
+    "id": 5224,
+    "userId": 5,
+    "templateId": 3,
+    "startTime": "2025-11-26T09:17:11.885Z",
+    "status": "in_progress",
+    "totalQuestions": 3,
+    "attemptDetails": []
+  },
+  {
+    "id": 5225,
+    "userId": 5,
+    "templateId": 3,
+    "startTime": "2025-11-26T09:17:11.905Z",
+    "status": "in_progress",
+    "totalQuestions": 3,
+    "attemptDetails": []
+  },
+  {
+    "id": 5226,
+    "userId": 5,
+    "templateId": 1,
+    "startTime": "2025-11-26T09:17:18.280Z",
+    "status": "in_progress",
+    "totalQuestions": 11,
+    "attemptDetails": []
+  },
+  {
+    "id": 5227,
+    "userId": 5,
+    "templateId": 1,
+    "startTime": "2025-11-26T09:17:18.298Z",
+    "status": "completed",
+    "totalQuestions": 11,
+    "attemptDetails": [
+      {
+        "questionId": 101,
+        "userAnswer": 1002,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 102,
+        "userAnswer": [
+          1005,
+          1006,
+          1007,
+          1008
+        ],
+        "earnedPoints": 1,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 103,
+        "userAnswer": 1012,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 104,
+        "userAnswer": 1016,
+        "earnedPoints": 2,
+        "maxPoints": 2,
+        "isCorrect": true
+      },
+      {
+        "questionId": 105,
+        "userAnswer": 1017,
+        "earnedPoints": 1,
+        "maxPoints": 1,
+        "isCorrect": true
+      },
+      {
+        "questionId": 107,
+        "userAnswer": true,
+        "earnedPoints": 1,
+        "maxPoints": 1,
+        "isCorrect": true
+      },
+      {
+        "questionId": 111,
+        "userAnswer": true,
+        "earnedPoints": 1,
+        "maxPoints": 1,
+        "isCorrect": true
+      },
+      {
+        "questionId": 112,
+        "userAnswer": [
+          "User gửi request",
+          "Server render HTML",
+          "HTML gửi về client",
+          "Server fetch data",
+          "Hydration xảy ra"
+        ],
+        "earnedPoints": 1.2,
+        "maxPoints": 3,
+        "isCorrect": false
+      },
+      {
+        "questionId": 113,
+        "userAnswer": [
+          1022,
+          1021,
+          1024,
+          1025,
+          1023
+        ],
+        "earnedPoints": 1,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 114,
+        "userAnswer": "saddf",
+        "earnedPoints": 0,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 115,
+        "userAnswer": {
+          "SSR": "Render on client browser",
+          "ISR": "Regenerate after interval",
+          "CSR": "Render on every request",
+          "SSG": "Render at build time"
+        },
+        "earnedPoints": 1,
+        "maxPoints": 2,
+        "isCorrect": false
+      }
+    ],
+    "endTime": "2025-11-26T09:17:57.151Z",
+    "score": 9.2,
+    "maxScore": 18,
+    "percentage": 36,
+    "passed": false,
+    "correctCount": 4
   }
 ]
