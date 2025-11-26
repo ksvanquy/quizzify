@@ -1,0 +1,22 @@
+[
+
+  { "id": 1001, "questionId": 101, "text": "Angular" },
+  { "id": 1002, "questionId": 101, "text": "Vue.js" },
+  { "id": 1003, "questionId": 101, "text": "React" }, 
+  { "id": 1004, "questionId": 101, "text": "Svelte" },
+  
+  { "id": 1005, "questionId": 102, "text": "Server-Side Rendering (SSR)" },
+  { "id": 1006, "questionId": 102, "text": "Client-Side Rendering (CSR)" },
+  { "id": 1007, "questionId": 102, "text": "Static Site Generation (SSG)" },
+  { "id": 1008, "questionId": 102, "text": "Edge Rendering" },
+  
+  { "id": 1009, "questionId": 103, "text": "useState" },
+  { "id": 1010, "questionId": 103, "text": "useEffect" },
+  { "id": 1011, "questionId": 103, "text": "useReducer" },
+  { "id": 1012, "questionId": 103, "text": "useContext" },
+
+  { "id": 1013, "questionId": 104, "text": "Ảnh (Images)" },
+  { "id": 1014, "questionId": 104, "text": "Tệp phông chữ (Fonts)" },
+  { "id": 1015, "questionId": 104, "text": "Tệp robots.txt" },
+  { "id": 1016, "questionId": 104, "text": "Tệp JSX/TSX cho component" }
+]

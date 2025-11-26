@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "username": "nguyenvana",
+    "name": "Nguyễn Văn A",
+    "email": "a.nguyen@example.com",
+    "role": "student"
+  },
+  {
+    "id": 2,
+    "username": "lethib",
+    "name": "Lê Thị B",
+    "email": "b.le@example.com",
+    "role": "student"
+  },
+  {
+    "id": 3,
+    "username": "admin",
+    "name": "Quản Trị Viên",
+    "email": "admin@example.com",
+    "role": "admin"
+  }
+]

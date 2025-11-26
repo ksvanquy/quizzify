@@ -1,0 +1,35 @@
+[
+  {
+    "id": 1,
+    "name": "Bài Thi Cuối Kỳ Next.js",
+    "status": "active",
+    "durationMinutes": 60,
+    "maxAttempts": 3,
+    "shuffleQuestions": true,
+    "revealAnswersAfterSubmission": false,
+    "passingScore": 70,
+    "questionSelection": {
+      "mode": "random",
+      "sourceTopics": ["Nextjs_Routing", "React_Hooks", "API_Routes", "Nextjs_Fundamentals", "Nextjs_Rendering"],
+      "randomCounts": {
+        "easy": 5,
+        "medium": 10,
+        "hard": 5
+      }
+    }
+  },
+  {
+    "id": 2,
+    "name": "Bài Tập React Hooks Cơ Bản",
+    "status": "active",
+    "durationMinutes": 30,
+    "maxAttempts": 0,
+    "shuffleQuestions": false,
+    "revealAnswersAfterSubmission": true,
+    "passingScore": 0,
+    "questionSelection": {
+      "mode": "manual",
+      "manualQuestionIds": [101, 103, 104, 105] 
+    }
+  }
+]

@@ -1,0 +1,91 @@
+[
+  {
+    "id": 5001,
+    "userId": 1,
+    "templateId": 1,
+    "startTime": "2025-11-26T09:00:00Z",
+    "endTime": "2025-11-26T09:45:00Z",
+    "status": "completed",
+    "score": 17,
+    "totalQuestions": 20,
+    "percentage": 85,
+    "passed": true,
+    "attemptDetails": [
+      {
+        "questionId": 101,
+        "submittedOptionId": 1003,
+        "isCorrect": true
+      },
+      {
+        "questionId": 102,
+        "submittedOptionIds": [
+          1005,
+          1006
+        ],
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": 5002,
+    "userId": 2,
+    "templateId": 1,
+    "startTime": "2025-11-26T10:00:00Z",
+    "status": "in_progress",
+    "totalQuestions": 20,
+    "attemptDetails": [
+      {
+        "questionId": 101,
+        "submittedOptionId": 1003,
+        "isCorrect": null
+      }
+    ]
+  },
+  {
+    "id": 5003,
+    "userId": 1,
+    "templateId": 1,
+    "startTime": "2025-11-26T03:45:00.770Z",
+    "status": "in_progress",
+    "totalQuestions": 4,
+    "attemptDetails": []
+  },
+  {
+    "id": 5004,
+    "userId": 1,
+    "templateId": 1,
+    "startTime": "2025-11-26T03:45:00.785Z",
+    "status": "completed",
+    "totalQuestions": 4,
+    "attemptDetails": [
+      {
+        "questionId": 101,
+        "submittedOptionId": 1002,
+        "isCorrect": false
+      },
+      {
+        "questionId": 102,
+        "submittedOptionIds": [
+          1007,
+          1006,
+          1005
+        ],
+        "isCorrect": false
+      },
+      {
+        "questionId": 103,
+        "submittedOptionId": 1011,
+        "isCorrect": true
+      },
+      {
+        "questionId": 104,
+        "submittedOptionId": 1013,
+        "isCorrect": false
+      }
+    ],
+    "endTime": "2025-11-26T03:45:15.566Z",
+    "score": 1,
+    "percentage": 25,
+    "passed": false
+  }
+]
