@@ -10,6 +10,9 @@ import {
   scoreOrdering,
   scoreMatching,
   scoreFillBlank,
+  scoreImageChoice,
+  scoreNumericInput,
+  scoreClozeTest,
   calculateTotalScore
 } from '@/app/utils/scoring';
 
@@ -159,6 +162,42 @@ export async function POST(request) {
             scoreResult = scoreFillBlank(
               question.correctAnswers || [],
               typeof userAnswer === 'string' ? userAnswer : '',
+              question.caseSensitive || false,
+              points
+            );
+            break;
+
+          case 'image_choice':
+            scoreResult = scoreImageChoice(
+              question.correctOptionId,
+              userAnswer,
+              points,
+              false
+            );
+            break;
+
+          case 'image_choice_multiple':
+            scoreResult = scoreImageChoice(
+              question.correctOptionIds || [],
+              Array.isArray(userAnswer) ? userAnswer : [],
+              points,
+              true
+            );
+            break;
+
+          case 'numeric_input':
+            scoreResult = scoreNumericInput(
+              question.correctAnswer,
+              userAnswer,
+              question.tolerance || 0,
+              points
+            );
+            break;
+
+          case 'cloze_test':
+            scoreResult = scoreClozeTest(
+              question.correctAnswers || {},
+              typeof userAnswer === 'object' && userAnswer !== null ? userAnswer : {},
               question.caseSensitive || false,
               points
             );

@@ -6,6 +6,9 @@ import TrueFalseQuestion from './questions/TrueFalseQuestion';
 import OrderingQuestion from './questions/OrderingQuestion';
 import MatchingQuestion from './questions/MatchingQuestion';
 import FillBlankQuestion from './questions/FillBlankQuestion';
+import ImageChoiceQuestion from './questions/ImageChoiceQuestion';
+import NumericInputQuestion from './questions/NumericInputQuestion';
+import ClozeTestQuestion from './questions/ClozeTestQuestion';
 
 interface QuestionRendererProps {
   question: any;
@@ -198,6 +201,49 @@ export default function QuestionRenderer({
         onAnswerChange={onAnswerChange}
         showExplanation={showExplanation}
         isCorrect={isCorrect}
+      />
+    );
+  }
+
+  // Image Choice Question (single or multiple)
+  if (questionType === 'image_choice' || questionType === 'image_choice_multiple') {
+    return (
+      <ImageChoiceQuestion
+        question={question}
+        selectedAnswer={userAnswer}
+        onAnswerChange={onAnswerChange}
+        showExplanation={showExplanation}
+        correctAnswer={correctAnswer}
+      />
+    );
+  }
+
+  // Numeric Input Question
+  if (questionType === 'numeric_input') {
+    const isCorrect = showExplanation && correctAnswer !== undefined
+      ? Math.abs(parseFloat(userAnswer || '0') - correctAnswer) <= (question.tolerance || 0)
+      : undefined;
+
+    return (
+      <NumericInputQuestion
+        question={question}
+        selectedAnswer={userAnswer}
+        onAnswerChange={onAnswerChange}
+        showExplanation={showExplanation}
+        isCorrect={isCorrect}
+      />
+    );
+  }
+
+  // Cloze Test Question
+  if (questionType === 'cloze_test') {
+    return (
+      <ClozeTestQuestion
+        question={question}
+        selectedAnswer={userAnswer || {}}
+        onAnswerChange={onAnswerChange}
+        showExplanation={showExplanation}
+        correctAnswers={correctAnswer as Record<string, string[]> | undefined}
       />
     );
   }

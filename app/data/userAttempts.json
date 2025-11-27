@@ -3158,7 +3158,7 @@
     "templateId": 5,
     "startTime": "2025-11-27T07:43:07.873Z",
     "status": "in_progress",
-    "totalQuestions": 6,
+    "totalQuestions": 0,
     "attemptDetails": []
   },
   {
@@ -3311,5 +3311,526 @@
     "percentage": 17,
     "passed": false,
     "correctCount": 1
+  },
+  {
+    "id": 5234,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T07:55:23.067Z",
+    "status": "in_progress",
+    "totalQuestions": 6,
+    "attemptDetails": []
+  },
+  {
+    "id": 5235,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T07:55:23.090Z",
+    "status": "completed",
+    "totalQuestions": 6,
+    "attemptDetails": [
+      {
+        "questionId": 101,
+        "userAnswer": 1003,
+        "earnedPoints": 1,
+        "maxPoints": 1,
+        "isCorrect": true
+      },
+      {
+        "questionId": 102,
+        "userAnswer": [
+          1005,
+          1006
+        ],
+        "earnedPoints": 0.5,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 106,
+        "userAnswer": true,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 108,
+        "userAnswer": [
+          "componentDidMount",
+          "componentWillUnmount",
+          "render",
+          "constructor"
+        ],
+        "earnedPoints": 0.5,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 109,
+        "userAnswer": {
+          "useEffect": "Tối ưu tính toán phức tạp",
+          "useState": "Quản lý state đơn giản",
+          "useContext": "Chia sẻ data giữa components",
+          "useMemo": "Side effects và lifecycle"
+        },
+        "earnedPoints": 1.5,
+        "maxPoints": 3,
+        "isCorrect": false
+      },
+      {
+        "questionId": 110,
+        "userAnswer": "virtual",
+        "earnedPoints": 1,
+        "maxPoints": 1,
+        "isCorrect": true
+      }
+    ],
+    "endTime": "2025-11-27T07:55:49.661Z",
+    "score": 4.5,
+    "maxScore": 10,
+    "percentage": 33,
+    "passed": false,
+    "correctCount": 2
+  },
+  {
+    "id": 5236,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T07:59:38.217Z",
+    "status": "in_progress",
+    "totalQuestions": 6,
+    "attemptDetails": []
+  },
+  {
+    "id": 5237,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T07:59:38.239Z",
+    "status": "in_progress",
+    "totalQuestions": 6,
+    "attemptDetails": []
+  },
+  {
+    "id": 5238,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T07:59:49.050Z",
+    "status": "in_progress",
+    "totalQuestions": 6,
+    "attemptDetails": []
+  },
+  {
+    "id": 5239,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:00:49.774Z",
+    "status": "in_progress",
+    "totalQuestions": 9,
+    "attemptDetails": []
+  },
+  {
+    "id": 5240,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:00:49.799Z",
+    "status": "completed",
+    "totalQuestions": 9,
+    "attemptDetails": [
+      {
+        "questionId": 101,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 102,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 106,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 108,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 109,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 3,
+        "isCorrect": false
+      },
+      {
+        "questionId": 110,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 116,
+        "userAnswer": 1026,
+        "earnedPoints": 1,
+        "maxPoints": 1,
+        "isCorrect": true
+      },
+      {
+        "questionId": 117,
+        "userAnswer": "112",
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 119,
+        "userAnswer": {
+          "company": "tý",
+          "year": "1982",
+          "dom": "dom"
+        },
+        "earnedPoints": 0,
+        "maxPoints": 3,
+        "isCorrect": false
+      }
+    ],
+    "endTime": "2025-11-27T08:01:25.532Z",
+    "score": 1,
+    "maxScore": 15,
+    "percentage": 11,
+    "passed": false,
+    "correctCount": 1
+  },
+  {
+    "id": 5241,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:01:53.035Z",
+    "status": "in_progress",
+    "totalQuestions": 9,
+    "attemptDetails": []
+  },
+  {
+    "id": 5242,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:01:55.440Z",
+    "status": "in_progress",
+    "totalQuestions": 9,
+    "attemptDetails": []
+  },
+  {
+    "id": 5243,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:01:55.467Z",
+    "status": "completed",
+    "totalQuestions": 9,
+    "attemptDetails": [
+      {
+        "questionId": 101,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 102,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 106,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 108,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 109,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 3,
+        "isCorrect": false
+      },
+      {
+        "questionId": 110,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 116,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 117,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 119,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 3,
+        "isCorrect": false
+      }
+    ],
+    "endTime": "2025-11-27T08:01:57.633Z",
+    "score": 0,
+    "maxScore": 15,
+    "percentage": 0,
+    "passed": false,
+    "correctCount": 0
+  },
+  {
+    "id": 5244,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:02:34.673Z",
+    "status": "in_progress",
+    "totalQuestions": 9,
+    "attemptDetails": []
+  },
+  {
+    "id": 5245,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:02:34.693Z",
+    "status": "completed",
+    "totalQuestions": 9,
+    "attemptDetails": [
+      {
+        "questionId": 101,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 102,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 106,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 108,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 109,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 3,
+        "isCorrect": false
+      },
+      {
+        "questionId": 110,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 116,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 117,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 119,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 3,
+        "isCorrect": false
+      }
+    ],
+    "endTime": "2025-11-27T08:02:36.061Z",
+    "score": 0,
+    "maxScore": 15,
+    "percentage": 0,
+    "passed": false,
+    "correctCount": 0
+  },
+  {
+    "id": 5246,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:02:59.476Z",
+    "status": "in_progress",
+    "totalQuestions": 9,
+    "attemptDetails": []
+  },
+  {
+    "id": 5247,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:03:01.904Z",
+    "status": "in_progress",
+    "totalQuestions": 9,
+    "attemptDetails": []
+  },
+  {
+    "id": 5248,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:03:01.924Z",
+    "status": "in_progress",
+    "totalQuestions": 9,
+    "attemptDetails": []
+  },
+  {
+    "id": 5249,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:03:46.710Z",
+    "status": "in_progress",
+    "totalQuestions": 9,
+    "attemptDetails": []
+  },
+  {
+    "id": 5250,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:03:46.731Z",
+    "status": "in_progress",
+    "totalQuestions": 9,
+    "attemptDetails": []
+  },
+  {
+    "id": 5251,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:03:52.455Z",
+    "status": "in_progress",
+    "totalQuestions": 9,
+    "attemptDetails": []
+  },
+  {
+    "id": 5252,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T08:03:52.474Z",
+    "status": "completed",
+    "totalQuestions": 9,
+    "attemptDetails": [
+      {
+        "questionId": 101,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 102,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 106,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 108,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 109,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 3,
+        "isCorrect": false
+      },
+      {
+        "questionId": 110,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 116,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 117,
+        "userAnswer": null,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 119,
+        "userAnswer": {
+          "dom": "virtual dom",
+          "company": "facebook",
+          "year": "1992"
+        },
+        "earnedPoints": 2,
+        "maxPoints": 3,
+        "isCorrect": false
+      }
+    ],
+    "endTime": "2025-11-27T08:04:13.553Z",
+    "score": 2,
+    "maxScore": 15,
+    "percentage": 0,
+    "passed": false,
+    "correctCount": 0
   }
 ]

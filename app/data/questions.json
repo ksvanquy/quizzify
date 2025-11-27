@@ -217,5 +217,76 @@
       "CSR": "Render on client browser"
     },
     "explanation": "SSR (mỗi request), SSG (lúc build), ISR (revalidate sau khoảng thời gian), CSR (trên browser)."
+  },
+  {
+    "id": 116,
+    "text": "Chọn logo React chính xác",
+    "type": "image_choice",
+    "topic": "React_Fundamentals",
+    "difficulty": "easy",
+    "points": 1,
+    "shuffleOptions": true,
+    "answerOptionIds": [1026, 1027, 1028, 1029],
+    "correctOptionId": 1026,
+    "explanation": "Logo React có 3 vòng elip xoay quanh một nguyên tử, màu xanh lam (#61DAFB)."
+  },
+  {
+    "id": 117,
+    "text": "Tính giá trị của biểu thức: 2 + 3 × 4",
+    "type": "numeric_input",
+    "topic": "Math_Basics",
+    "difficulty": "easy",
+    "points": 1,
+    "shuffleOptions": false,
+    "correctAnswer": 14,
+    "tolerance": 0,
+    "unit": "",
+    "step": 1,
+    "explanation": "Theo thứ tự ưu tiên phép toán: 3 × 4 = 12, sau đó 2 + 12 = 14."
+  },
+  {
+    "id": 118,
+    "text": "Tính diện tích hình tròn có bán kính r = 5cm (π ≈ 3.14)",
+    "type": "numeric_input",
+    "topic": "Math_Geometry",
+    "difficulty": "medium",
+    "points": 2,
+    "shuffleOptions": false,
+    "correctAnswer": 78.5,
+    "tolerance": 0.5,
+    "unit": "cm²",
+    "step": 0.1,
+    "explanation": "Diện tích hình tròn = π × r² = 3.14 × 5² = 3.14 × 25 = 78.5 cm²."
+  },
+  {
+    "id": 119,
+    "text": "React được phát triển bởi {{company}} vào năm {{year}}. Nó sử dụng {{dom}} để tối ưu hiệu suất.",
+    "type": "cloze_test",
+    "topic": "React_History",
+    "difficulty": "medium",
+    "points": 3,
+    "shuffleOptions": false,
+    "caseSensitive": false,
+    "correctAnswers": {
+      "company": ["Facebook", "Meta"],
+      "year": ["2013"],
+      "dom": ["Virtual DOM", "virtual dom", "VDOM"]
+    },
+    "explanation": "React được Facebook (nay là Meta) phát triển năm 2013, sử dụng Virtual DOM để tối ưu rendering."
+  },
+  {
+    "id": 120,
+    "text": "Trong Next.js, file {{file1}} dùng để cấu hình ứng dụng, còn file {{file2}} dùng để tạo API endpoint.",
+    "type": "cloze_test",
+    "topic": "Nextjs_Files",
+    "difficulty": "hard",
+    "points": 2,
+    "shuffleOptions": false,
+    "caseSensitive": false,
+    "correctAnswers": {
+      "file1": ["next.config.js", "next.config.ts", "next config"],
+      "file2": ["route.js", "route.ts", "route"]
+    },
+    "explanation": "next.config.js/ts cho cấu hình, route.js/ts cho API routes trong App Router."
   }
 ]

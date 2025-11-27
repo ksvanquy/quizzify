@@ -123,6 +123,30 @@ export async function GET(request, { params }) {
       } else if (q.type === 'fill_blank') {
         // Fill blank chỉ cần text, không cần gửi correctAnswers
         questionData.caseSensitive = q.caseSensitive || false;
+      } else if (q.type === 'image_choice' || q.type === 'image_choice_multiple') {
+        // Image choice - load options with imageUrl
+        let options = answers
+          .filter(opt => q.answerOptionIds && q.answerOptionIds.includes(opt.id))
+          .map(opt => ({ 
+            id: opt.id, 
+            text: opt.text || '',
+            imageUrl: opt.imageUrl || ''
+          }));
+        
+        // Xáo trộn nếu cần
+        if (q.shuffleOptions) {
+          options = shuffleArray([...options]);
+        }
+        
+        questionData.options = options;
+      } else if (q.type === 'numeric_input') {
+        // Numeric input - gửi unit, step, tolerance (nếu có)
+        questionData.unit = q.unit || '';
+        questionData.step = q.step || 'any';
+        questionData.tolerance = q.tolerance || 0;
+      } else if (q.type === 'cloze_test') {
+        // Cloze test - text đã có placeholder {{blank_id}}
+        questionData.caseSensitive = q.caseSensitive || false;
       }
 
       return questionData;

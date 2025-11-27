@@ -214,6 +214,128 @@ export function scoreFillBlank(
 }
 
 /**
+ * Calculate score for Image Choice question (single or multiple)
+ */
+export function scoreImageChoice(
+  correctAnswer: number | number[],
+  selectedAnswer: number | number[] | null,
+  points: number = 1,
+  isMultiple: boolean = false
+): QuestionResult {
+  if (isMultiple) {
+    // Multiple image selection
+    const correctIds = Array.isArray(correctAnswer) ? correctAnswer : [correctAnswer];
+    const selectedIds = Array.isArray(selectedAnswer) ? selectedAnswer : (selectedAnswer ? [selectedAnswer] : []);
+    return scoreMultiChoice(correctIds, selectedIds, points);
+  } else {
+    // Single image selection
+    const correctId = Array.isArray(correctAnswer) ? correctAnswer[0] : correctAnswer;
+    const selectedId = Array.isArray(selectedAnswer) ? selectedAnswer[0] : selectedAnswer;
+    return scoreSingleChoice(correctId, selectedId, points);
+  }
+}
+
+/**
+ * Calculate score for Numeric Input question
+ */
+export function scoreNumericInput(
+  correctAnswer: number,
+  selectedAnswer: string | number | null,
+  tolerance: number = 0,
+  points: number = 1
+): QuestionResult {
+  if (selectedAnswer === null || selectedAnswer === '') {
+    return {
+      questionId: 0,
+      isCorrect: false,
+      score: 0,
+      maxScore: points,
+      percentage: 0
+    };
+  }
+
+  const userValue = typeof selectedAnswer === 'string' ? parseFloat(selectedAnswer) : selectedAnswer;
+  
+  if (isNaN(userValue)) {
+    return {
+      questionId: 0,
+      isCorrect: false,
+      score: 0,
+      maxScore: points,
+      percentage: 0
+    };
+  }
+
+  // Check if within tolerance range
+  const isCorrect = Math.abs(userValue - correctAnswer) <= tolerance;
+  const score = isCorrect ? points : 0;
+
+  return {
+    questionId: 0,
+    isCorrect,
+    score,
+    maxScore: points,
+    percentage: (score / points) * 100
+  };
+}
+
+/**
+ * Calculate score for Cloze Test question (multiple fill-in-the-blanks)
+ */
+export function scoreClozeTest(
+  correctAnswers: Record<string, string[]>,
+  selectedAnswers: Record<string, string> | null,
+  caseSensitive: boolean = false,
+  points: number = 1
+): QuestionResult {
+  if (!selectedAnswers) {
+    return {
+      questionId: 0,
+      isCorrect: false,
+      score: 0,
+      maxScore: points,
+      percentage: 0
+    };
+  }
+
+  const totalBlanks = Object.keys(correctAnswers).length;
+  let correctCount = 0;
+
+  // Check each blank
+  Object.keys(correctAnswers).forEach(blankId => {
+    const userAnswer = selectedAnswers[blankId];
+    if (!userAnswer) return;
+
+    const normalizedUser = caseSensitive 
+      ? userAnswer.trim() 
+      : userAnswer.trim().toLowerCase();
+
+    const isBlankCorrect = correctAnswers[blankId].some(answer => {
+      const normalizedCorrect = caseSensitive 
+        ? answer.trim() 
+        : answer.trim().toLowerCase();
+      return normalizedUser === normalizedCorrect;
+    });
+
+    if (isBlankCorrect) {
+      correctCount++;
+    }
+  });
+
+  const isCorrect = correctCount === totalBlanks;
+  const percentage = totalBlanks > 0 ? (correctCount / totalBlanks) * 100 : 0;
+  const score = (points * correctCount) / totalBlanks;
+
+  return {
+    questionId: 0,
+    isCorrect,
+    score: Math.round(score * 100) / 100,
+    maxScore: points,
+    percentage
+  };
+}
+
+/**
  * Calculate total quiz score
  */
 export function calculateTotalScore(results: QuestionResult[]): {

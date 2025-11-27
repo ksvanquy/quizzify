@@ -87,16 +87,16 @@
     "categoryId": 3,
     "status": "active",
     "difficulty": "medium",
-    "durationMinutes": 20,
+    "durationMinutes": 25,
     "maxAttempts": 0,
     "shuffleQuestions": false,
     "revealAnswersAfterSubmission": true,
     "passingScore": 60,
-    "description": "Quiz demo với đầy đủ 6 loại câu hỏi: Single Choice, Multi Choice, True/False, Ordering, Matching, Fill in the Blank",
-    "tags": ["demo", "test", "all-types"],
+    "description": "Quiz demo với đầy đủ 9 loại câu hỏi: Single Choice, Multi Choice, True/False, Ordering, Matching, Fill Blank, Image Choice, Numeric Input, Cloze Test",
+    "tags": ["demo", "test", "all-types", "complete"],
     "questionSelection": {
       "mode": "manual",
-      "manualQuestionIds": [101, 102, 106, 108, 109, 110]
+      "manualQuestionIds": [101, 102, 106, 108, 109, 110, 116, 117, 119]
     }
   },
   {
