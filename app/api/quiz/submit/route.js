@@ -61,7 +61,7 @@ export async function POST(request) {
 
     // Load data
     const userAttempts = loadData('userAttempts.json');
-    const questionBank = loadData('questionBank.json');
+    const questions = loadData('questions.json');
     const templates = loadData('quizTemplates.json');
 
     // Find the attempt
@@ -105,7 +105,7 @@ export async function POST(request) {
     const questionResults = [];
 
     for (const questionId of allQuestionIds) {
-      const question = questionBank.find(q => q.id === questionId);
+      const question = questions.find(q => q.id === questionId);
       if (!question) continue;
 
       const points = question.points || 1;

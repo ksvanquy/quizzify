@@ -28,44 +28,49 @@ export default function QuestionRenderer({
   if (questionType === 'single_choice') {
     const isMultiple = false;
     const currentAnswer = userAnswer;
+    const correctOptionId = question.correctOptionId;
 
     return (
       <div className="space-y-3">
-        {question.options.map((option: any) => (
-          <label
-            key={option.id}
-            className={`flex items-center space-x-3 p-3 border rounded-md cursor-pointer transition ${
-              showExplanation
-                ? option.isCorrect
-                  ? 'border-green-500 bg-green-50'
+        {question.options.map((option: any) => {
+          const isCorrect = option.id === correctOptionId;
+          
+          return (
+            <label
+              key={option.id}
+              className={`flex items-center space-x-3 p-3 border rounded-md cursor-pointer transition ${
+                showExplanation
+                  ? isCorrect
+                    ? 'border-green-500 bg-green-50'
+                    : currentAnswer === option.id
+                    ? 'border-red-500 bg-red-50'
+                    : 'border-gray-300 hover:bg-gray-50'
                   : currentAnswer === option.id
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-300 hover:bg-gray-50'
-                : currentAnswer === option.id
-                ? 'border-indigo-600 bg-indigo-50'
-                : 'border-gray-300 hover:bg-indigo-50'
-            }`}
-          >
-            <input
-              type="radio"
-              name={`q_${question.id}`}
-              value={option.id}
-              checked={currentAnswer === option.id}
-              onChange={() => onAnswerChange(option.id)}
-              disabled={showExplanation}
-              className="form-radio text-indigo-600"
-            />
-            <span className={`flex-1 ${showExplanation && option.isCorrect ? 'font-semibold' : ''}`}>
-              {option.text}
-            </span>
-            {showExplanation && option.isCorrect && (
-              <span className="text-green-600 text-xl">✓</span>
-            )}
-            {showExplanation && !option.isCorrect && currentAnswer === option.id && (
-              <span className="text-red-600 text-xl">✗</span>
-            )}
-          </label>
-        ))}
+                  ? 'border-indigo-600 bg-indigo-50'
+                  : 'border-gray-300 hover:bg-indigo-50'
+              }`}
+            >
+              <input
+                type="radio"
+                name={`q_${question.id}`}
+                value={option.id}
+                checked={currentAnswer === option.id}
+                onChange={() => onAnswerChange(option.id)}
+                disabled={showExplanation}
+                className="form-radio text-indigo-600"
+              />
+              <span className={`flex-1 ${showExplanation && isCorrect ? 'font-semibold' : ''}`}>
+                {option.text}
+              </span>
+              {showExplanation && isCorrect && (
+                <span className="text-green-600 text-xl">✓</span>
+              )}
+              {showExplanation && !isCorrect && currentAnswer === option.id && (
+                <span className="text-red-600 text-xl">✗</span>
+              )}
+            </label>
+          );
+        })}
       </div>
     );
   }
@@ -73,49 +78,54 @@ export default function QuestionRenderer({
   // Multi Choice Question (existing)
   if (questionType === 'multi_choice') {
     const currentAnswer = userAnswer || [];
+    const correctOptionIds = question.correctOptionIds || [];
 
     return (
       <div className="space-y-3">
         <p className="text-sm text-gray-600 mb-3">(Chọn nhiều đáp án)</p>
-        {question.options.map((option: any) => (
-          <label
-            key={option.id}
-            className={`flex items-center space-x-3 p-3 border rounded-md cursor-pointer transition ${
-              showExplanation
-                ? option.isCorrect
-                  ? 'border-green-500 bg-green-50'
+        {question.options.map((option: any) => {
+          const isCorrect = correctOptionIds.includes(option.id);
+          
+          return (
+            <label
+              key={option.id}
+              className={`flex items-center space-x-3 p-3 border rounded-md cursor-pointer transition ${
+                showExplanation
+                  ? isCorrect
+                    ? 'border-green-500 bg-green-50'
+                    : currentAnswer.includes(option.id)
+                    ? 'border-red-500 bg-red-50'
+                    : 'border-gray-300 hover:bg-gray-50'
                   : currentAnswer.includes(option.id)
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-300 hover:bg-gray-50'
-                : currentAnswer.includes(option.id)
-                ? 'border-indigo-600 bg-indigo-50'
-                : 'border-gray-300 hover:bg-indigo-50'
-            }`}
-          >
-            <input
-              type="checkbox"
-              value={option.id}
-              checked={currentAnswer.includes(option.id)}
-              onChange={() => {
-                const newAnswers = currentAnswer.includes(option.id)
-                  ? currentAnswer.filter((id: number) => id !== option.id)
-                  : [...currentAnswer, option.id];
-                onAnswerChange(newAnswers);
-              }}
-              disabled={showExplanation}
-              className="form-checkbox text-indigo-600"
-            />
-            <span className={`flex-1 ${showExplanation && option.isCorrect ? 'font-semibold' : ''}`}>
-              {option.text}
-            </span>
-            {showExplanation && option.isCorrect && (
-              <span className="text-green-600 text-xl">✓</span>
-            )}
-            {showExplanation && !option.isCorrect && currentAnswer.includes(option.id) && (
-              <span className="text-red-600 text-xl">✗</span>
-            )}
-          </label>
-        ))}
+                  ? 'border-indigo-600 bg-indigo-50'
+                  : 'border-gray-300 hover:bg-indigo-50'
+              }`}
+            >
+              <input
+                type="checkbox"
+                value={option.id}
+                checked={currentAnswer.includes(option.id)}
+                onChange={() => {
+                  const newAnswers = currentAnswer.includes(option.id)
+                    ? currentAnswer.filter((id: number) => id !== option.id)
+                    : [...currentAnswer, option.id];
+                  onAnswerChange(newAnswers);
+                }}
+                disabled={showExplanation}
+                className="form-checkbox text-indigo-600"
+              />
+              <span className={`flex-1 ${showExplanation && isCorrect ? 'font-semibold' : ''}`}>
+                {option.text}
+              </span>
+              {showExplanation && isCorrect && (
+                <span className="text-green-600 text-xl">✓</span>
+              )}
+              {showExplanation && !isCorrect && currentAnswer.includes(option.id) && (
+                <span className="text-red-600 text-xl">✗</span>
+              )}
+            </label>
+          );
+        })}
       </div>
     );
   }

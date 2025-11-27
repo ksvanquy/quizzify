@@ -26,8 +26,8 @@ export async function GET(request, { params }) {
 
     // 1. Tải Dữ Liệu
     const templates = loadData('quizTemplates.json');
-    const questionBank = loadData('questionBank.json');
-    const questionOptions = loadData('questionOptions.json');
+    const questions = loadData('questions.json');
+    const answers = loadData('answers.json');
     const userAttempts = loadData('userAttempts.json');
     
     console.log('Templates loaded:', templates.length);
@@ -56,12 +56,12 @@ export async function GET(request, { params }) {
     let selectedQuestions = [];
 
     if (template.questionSelection.mode === 'manual' && template.questionSelection.manualQuestionIds) {
-      selectedQuestions = questionBank.filter(q => 
+      selectedQuestions = questions.filter(q => 
         template.questionSelection.manualQuestionIds.includes(q.id)
       );
     } else if (template.questionSelection.mode === 'random') {
       // Lọc theo chủ đề
-      const filteredQuestions = questionBank.filter(q => 
+      const filteredQuestions = questions.filter(q => 
         template.questionSelection.sourceTopics.includes(q.topic)
       );
       
@@ -93,7 +93,7 @@ export async function GET(request, { params }) {
       // Xử lý theo từng loại câu hỏi
       if (q.type === 'single_choice' || q.type === 'multi_choice') {
         // Lấy options cho single/multi choice
-        const options = questionOptions
+        const options = answers
           .filter(opt => q.answerOptionIds && q.answerOptionIds.includes(opt.id))
           .map(opt => ({ id: opt.id, text: opt.text }));
         

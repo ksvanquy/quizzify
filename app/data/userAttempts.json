@@ -3151,5 +3151,165 @@
     "status": "in_progress",
     "totalQuestions": 9,
     "attemptDetails": []
+  },
+  {
+    "id": 5230,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T07:43:07.873Z",
+    "status": "in_progress",
+    "totalQuestions": 6,
+    "attemptDetails": []
+  },
+  {
+    "id": 5231,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T07:43:07.907Z",
+    "status": "completed",
+    "totalQuestions": 6,
+    "attemptDetails": [
+      {
+        "questionId": 101,
+        "userAnswer": 1003,
+        "earnedPoints": 1,
+        "maxPoints": 1,
+        "isCorrect": true
+      },
+      {
+        "questionId": 102,
+        "userAnswer": [
+          1007,
+          1005
+        ],
+        "earnedPoints": 2,
+        "maxPoints": 2,
+        "isCorrect": true
+      },
+      {
+        "questionId": 106,
+        "userAnswer": true,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 108,
+        "userAnswer": [
+          "constructor",
+          "render",
+          "componentWillUnmount",
+          "componentDidMount"
+        ],
+        "earnedPoints": 0.5,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 109,
+        "userAnswer": {
+          "useState": "Chia sẻ data giữa components",
+          "useMemo": "Quản lý state đơn giản",
+          "useContext": "Tối ưu tính toán phức tạp",
+          "useEffect": "Side effects và lifecycle"
+        },
+        "earnedPoints": 0.75,
+        "maxPoints": 3,
+        "isCorrect": false
+      },
+      {
+        "questionId": 110,
+        "userAnswer": "virtual",
+        "earnedPoints": 1,
+        "maxPoints": 1,
+        "isCorrect": true
+      }
+    ],
+    "endTime": "2025-11-27T07:43:36.732Z",
+    "score": 5.25,
+    "maxScore": 10,
+    "percentage": 50,
+    "passed": false,
+    "correctCount": 3
+  },
+  {
+    "id": 5232,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T07:51:21.592Z",
+    "status": "in_progress",
+    "totalQuestions": 6,
+    "attemptDetails": []
+  },
+  {
+    "id": 5233,
+    "userId": 5,
+    "templateId": 5,
+    "startTime": "2025-11-27T07:51:21.612Z",
+    "status": "completed",
+    "totalQuestions": 6,
+    "attemptDetails": [
+      {
+        "questionId": 101,
+        "userAnswer": 1004,
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      },
+      {
+        "questionId": 102,
+        "userAnswer": [
+          1006,
+          1007
+        ],
+        "earnedPoints": 0.5,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 106,
+        "userAnswer": null,
+        "earnedPoints": 1,
+        "maxPoints": 1,
+        "isCorrect": true
+      },
+      {
+        "questionId": 108,
+        "userAnswer": [
+          "componentWillUnmount",
+          "render",
+          "componentDidMount",
+          "constructor"
+        ],
+        "earnedPoints": 0,
+        "maxPoints": 2,
+        "isCorrect": false
+      },
+      {
+        "questionId": 109,
+        "userAnswer": {
+          "useContext": "Side effects và lifecycle",
+          "useEffect": "Tối ưu tính toán phức tạp",
+          "useState": "Quản lý state đơn giản",
+          "useMemo": "Chia sẻ data giữa components"
+        },
+        "earnedPoints": 0.75,
+        "maxPoints": 3,
+        "isCorrect": false
+      },
+      {
+        "questionId": 110,
+        "userAnswer": "sd",
+        "earnedPoints": 0,
+        "maxPoints": 1,
+        "isCorrect": false
+      }
+    ],
+    "endTime": "2025-11-27T07:51:37.327Z",
+    "score": 2.25,
+    "maxScore": 10,
+    "percentage": 17,
+    "passed": false,
+    "correctCount": 1
   }
 ]

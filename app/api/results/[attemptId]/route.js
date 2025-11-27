@@ -25,8 +25,8 @@ export async function GET(request, { params }) {
     // Load data
     const userAttempts = loadData('userAttempts.json');
     const templates = loadData('quizTemplates.json');
-    const questionBank = loadData('questionBank.json');
-    const questionOptions = loadData('questionOptions.json');
+    const questions = loadData('questions.json');
+    const answers = loadData('answers.json');
 
     // Find the attempt
     const attempt = userAttempts.find(a => a.id === attemptId);
@@ -65,13 +65,13 @@ export async function GET(request, { params }) {
     }
 
     // Get full question details with options
-    const questions = questionIds.map(qId => {
-      const question = questionBank.find(q => q.id === qId);
+    const questionsWithDetails = questionIds.map(qId => {
+      const question = questions.find(q => q.id === qId);
       if (!question) return null;
 
       // Add options for single_choice and multi_choice questions
       if (question.type === 'single_choice' || question.type === 'multi_choice') {
-        const options = questionOptions.filter(opt => opt.questionId === qId);
+        const options = answers.filter(opt => opt.questionId === qId);
         return { ...question, options };
       }
 
@@ -92,7 +92,7 @@ export async function GET(request, { params }) {
       startTime: attempt.startTime,
       endTime: attempt.endTime,
       attemptDetails: attempt.attemptDetails || [],
-      questions: template.revealAnswersAfterSubmission ? questions : []
+      questions: template.revealAnswersAfterSubmission ? questionsWithDetails : []
     });
 
   } catch (error) {
