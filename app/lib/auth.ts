@@ -1,12 +1,12 @@
 import { API_URL } from "@/app/lib/api";
 
-export async function login(username: string, password: string) {
+export async function login(email: string, password: string) {
   // Call Next.js API route to set httpOnly cookies
   const res = await fetch('/api/auth/login', {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: 'include', // Important: send/receive cookies
-    body: JSON.stringify({ username, email: username, password }),
+    body: JSON.stringify({ email, password }),
   });
 
   return res.json();

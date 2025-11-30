@@ -23,7 +23,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
@@ -134,8 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (username: string, password: string) => {
-    const data = await authApi.login(username, password);
+  const login = async (email: string, password: string) => {
+    const data = await authApi.login(email, password);
 
     if (!data || !data.success) {
       throw new Error(data?.message || 'Đăng nhập thất bại');

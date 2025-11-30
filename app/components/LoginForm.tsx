@@ -85,15 +85,17 @@ export default function LoginForm({ initialMode = 'login', onSubmit }: LoginForm
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tên đăng nhập</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {isLogin ? 'Email' : 'Tên đăng nhập'}
+          </label>
           <input
-            type="text"
+            type={isLogin ? 'email' : 'text'}
             name="username"
             value={formData.username}
             onChange={handleChange}
             required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            placeholder="nguyenvana"
+            placeholder={isLogin ? 'admin@quizzify.com' : 'nguyenvana'}
           />
         </div>
 
