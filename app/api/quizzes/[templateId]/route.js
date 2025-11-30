@@ -93,6 +93,9 @@ export async function GET(request, { params }) {
     const questions = questionsResult.body?.data?.questions || [];
     
     console.log(`📊 Loaded ${questions.length} questions from NestJS`);
+    if (questions.length > 0) {
+      console.log('📄 Sample question structure:', JSON.stringify(questions[0], null, 2));
+    }
     console.log(`📋 Template questionSelection mode: ${template.questionSelection?.mode}`);
     
     // Check user attempts using forwardRequest
@@ -118,6 +121,9 @@ export async function GET(request, { params }) {
     if (template.questionSelection.mode === 'manual' && template.questionSelection.manualQuestionIds) {
       // Hỗ trợ MongoDB ObjectId (string)
       const manualIds = template.questionSelection.manualQuestionIds.map(id => String(id));
+      console.log('🔍 Looking for manualQuestionIds:', manualIds);
+      console.log('🔍 Available question IDs:', questions.map(q => String(q.id || q._id)));
+      
       selectedQuestions = questions.filter(q => {
         const qId = String(q.id || q._id);
         return manualIds.includes(qId);
