@@ -92,6 +92,9 @@ export async function GET(request, { params }) {
     
     const questions = questionsResult.body?.data?.questions || [];
     
+    console.log(`📊 Loaded ${questions.length} questions from NestJS`);
+    console.log(`📋 Template questionSelection mode: ${template.questionSelection?.mode}`);
+    
     // Check user attempts using forwardRequest
     let userAttemptsCount = 0;
     const attemptsResult = await forwardRequest(`/attempts/template/${templateId}`, request, { method: 'GET' });
@@ -140,6 +143,16 @@ export async function GET(request, { params }) {
       shuffleArray(selectedQuestions);
     }
 
+    console.log(`✅ Selected ${selectedQuestions.length} questions for quiz`);
+    
+    if (selectedQuestions.length === 0) {
+      console.error('❌ No questions selected!');
+      console.error('Template:', JSON.stringify(template.questionSelection, null, 2));
+      console.error('Available questions:', questions.length);
+      return NextResponse.json({ 
+        message: 'No questions found in quiz. Please configure quiz questions in admin panel.' 
+      }, { status: 500 });
+    }
 
     // 4. Chuẩn bị dữ liệu cho Frontend (Lọc đáp án đúng và Ghép nối options)
     const quizDataForClient = selectedQuestions.map(q => {
