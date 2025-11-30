@@ -1,10 +1,11 @@
 // app/api/quizzes/[templateId]/route.js
-
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { loadData, shuffleArray } from './utils/data'; // Import các hàm hỗ trợ
+import { loadData, shuffleArray } from './utils/data';
 import fs from 'fs';
 import path from 'path';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export async function GET(request, { params }) {
   try {
@@ -24,26 +25,63 @@ export async function GET(request, { params }) {
     const session = JSON.parse(sessionCookie.value);
     const userId = session.userId;
 
-    // 1. Tải Dữ Liệu
-    const templates = loadData('quizTemplates.json');
-    const questions = loadData('questions.json');
-    const answers = loadData('answers.json');
-    const userAttempts = loadData('userAttempts.json');
+    // 1. Tải Dữ Liệu từ NestJS API
+    const headers = {
+      'Authorization': `Bearer ${session.token || session.accessToken || ''}`,
+    };
     
-    console.log('Templates loaded:', templates.length);
-    console.log('Looking for templateId:', templateId);
+    let template, questions;
     
-    const template = templates.find(t => t.id === templateId);
-
-    if (!template || template.status !== 'active') {
-      return NextResponse.json({ message: 'Quiz template not found or inactive.' }, { status: 404 });
+    try {
+      // Lấy quiz template từ NestJS API
+      const templateRes = await fetch(`${API_URL}/quizzes/${templateId}`, { headers });
+      if (!templateRes.ok) {
+        return NextResponse.json({ message: 'Quiz template not found.' }, { status: 404 });
+      }
+      
+      const templateData = await templateRes.json();
+      if (!templateData.success || !templateData.data || !templateData.data.quiz) {
+        return NextResponse.json({ message: 'Quiz template not found.' }, { status: 404 });
+      }
+      
+      template = templateData.data.quiz;
+      
+      if (template.status !== 'active') {
+        return NextResponse.json({ message: 'Quiz template is not active.' }, { status: 404 });
+      }
+      
+      // Lấy questions từ NestJS API
+      const questionsRes = await fetch(`${API_URL}/questions`, { headers });
+      if (!questionsRes.ok) {
+        return NextResponse.json({ message: 'Failed to load questions.' }, { status: 500 });
+      }
+      
+      const questionsData = await questionsRes.json();
+      // API trả về {success, data: {questions: [...], total: number}}
+      questions = questionsData?.data?.questions || [];
+      
+      console.log('Template loaded:', template?.name);
+      console.log('Questions loaded:', questions?.length);
+      
+    } catch (error) {
+      console.error('Error fetching from API:', error);
+      return NextResponse.json({ message: 'Failed to load quiz data.' }, { status: 500 });
+    }
+    
+    // Check user attempts using NestJS API
+    let userAttemptsCount = 0;
+    try {
+      const attemptsRes = await fetch(`${API_URL}/attempts/template/${templateId}`, { headers });
+      if (attemptsRes.ok) {
+        const attemptsData = await attemptsRes.json();
+        const attempts = attemptsData?.data?.attempts || [];
+        userAttemptsCount = attempts.filter(a => a.status === 'completed').length;
+      }
+    } catch (error) {
+      console.error('Error fetching attempts:', error);
     }
 
     // 2. Kiểm tra giới hạn số lần làm bài (maxAttempts)
-    const userAttemptsCount = userAttempts.filter(
-      attempt => attempt.userId === userId && attempt.templateId === templateId && attempt.status === 'completed'
-    ).length;
-
     console.log('User completed attempts:', userAttemptsCount, 'Max allowed:', template.maxAttempts);
 
     if (template.maxAttempts !== 0 && userAttemptsCount >= template.maxAttempts) {
@@ -56,9 +94,12 @@ export async function GET(request, { params }) {
     let selectedQuestions = [];
 
     if (template.questionSelection.mode === 'manual' && template.questionSelection.manualQuestionIds) {
-      selectedQuestions = questions.filter(q => 
-        template.questionSelection.manualQuestionIds.includes(q.id)
-      );
+      // Hỗ trợ MongoDB ObjectId (string)
+      const manualIds = template.questionSelection.manualQuestionIds.map(id => String(id));
+      selectedQuestions = questions.filter(q => {
+        const qId = String(q.id || q._id);
+        return manualIds.includes(qId);
+      });
     } else if (template.questionSelection.mode === 'random') {
       // Lọc theo chủ đề
       const filteredQuestions = questions.filter(q => 
@@ -84,7 +125,7 @@ export async function GET(request, { params }) {
     // 4. Chuẩn bị dữ liệu cho Frontend (Lọc đáp án đúng và Ghép nối options)
     const quizDataForClient = selectedQuestions.map(q => {
       const questionData = {
-        id: q.id,
+        id: q.id || q._id, // Hỗ trợ MongoDB ObjectId
         text: q.text,
         type: q.type,
         points: q.points || 1
@@ -92,13 +133,12 @@ export async function GET(request, { params }) {
 
       // Xử lý theo từng loại câu hỏi
       if (q.type === 'single_choice' || q.type === 'multi_choice') {
-        // Lấy options cho single/multi choice
-        const options = answers
-          .filter(opt => q.answerOptionIds && q.answerOptionIds.includes(opt.id))
-          .map(opt => ({ id: opt.id, text: opt.text }));
+        // TODO: NestJS API cần populate options hoặc có endpoint riêng để lấy answers
+        // Tạm thời sử dụng optionIds nếu có, hoặc cần fetch từ answers API
+        const options = q.options || []; // Giả định API sẽ populate options
         
         // Xáo trộn nếu cần
-        if (q.shuffleOptions) {
+        if (q.shuffleOptions && options.length > 0) {
           shuffleArray(options);
         }
         
@@ -124,17 +164,11 @@ export async function GET(request, { params }) {
         // Fill blank chỉ cần text, không cần gửi correctAnswers
         questionData.caseSensitive = q.caseSensitive || false;
       } else if (q.type === 'image_choice' || q.type === 'image_choice_multiple') {
-        // Image choice - load options with imageUrl
-        let options = answers
-          .filter(opt => q.answerOptionIds && q.answerOptionIds.includes(opt.id))
-          .map(opt => ({ 
-            id: opt.id, 
-            text: opt.text || '',
-            imageUrl: opt.imageUrl || ''
-          }));
+        // Image choice - options should be populated by API
+        let options = q.options || [];
         
         // Xáo trộn nếu cần
-        if (q.shuffleOptions) {
+        if (q.shuffleOptions && options.length > 0) {
           options = shuffleArray([...options]);
         }
         

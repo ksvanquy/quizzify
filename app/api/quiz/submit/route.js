@@ -1,8 +1,9 @@
 // app/api/quiz/submit/route.js
-
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 import {
   scoreSingleChoice,
   scoreMultiChoice,
@@ -62,36 +63,50 @@ export async function POST(request) {
     const session = JSON.parse(sessionCookie.value);
     const userId = session.userId;
 
-    // Load data
-    const userAttempts = loadData('userAttempts.json');
-    const questions = loadData('questions.json');
-    const templates = loadData('quizTemplates.json');
-
-    // Find the attempt
-    const attemptIndex = userAttempts.findIndex(a => a.id === attemptId);
+    // Sử dụng NestJS Attempts API để submit
+    const headers = {
+      'Authorization': `Bearer ${session.token || session.accessToken || ''}`,
+      'Content-Type': 'application/json',
+    };
     
-    if (attemptIndex === -1) {
-      return NextResponse.json({ message: 'Attempt not found' }, { status: 404 });
-    }
-
-    const attempt = userAttempts[attemptIndex];
-
-    // Verify attempt belongs to the authenticated user
-    if (attempt.userId !== userId) {
+    try {
+      // Gọi submit request đến NestJS API
+      const submitRes = await fetch(`${API_URL}/attempts/${attemptId}/submit`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ userAnswers: answers }),
+      });
+      
+      if (!submitRes.ok) {
+        const errorData = await submitRes.json();
+        return NextResponse.json({ 
+          message: errorData.message || 'Failed to submit attempt' 
+        }, { status: submitRes.status });
+      }
+      
+      const result = await submitRes.json();
+      
+      if (!result.success) {
+        return NextResponse.json({ 
+          message: result.message || 'Failed to submit attempt' 
+        }, { status: 400 });
+      }
+      
+      const submittedAttempt = result.data.attempt;
+      
+      return NextResponse.json({
+        message: 'Bài thi đã được nộp thành công!',
+        attemptId: submittedAttempt.id,
+        score: submittedAttempt.totalScore,
+        percentage: submittedAttempt.percentage,
+        passed: submittedAttempt.passed,
+      });
+      
+    } catch (error) {
+      console.error('Error submitting to API:', error);
       return NextResponse.json({ 
-        message: 'Bạn không có quyền nộp bài thi này.' 
-      }, { status: 403 });
-    }
-    
-    if (attempt.status !== 'in_progress') {
-      return NextResponse.json({ message: 'This attempt is already completed' }, { status: 400 });
-    }
-
-    // Find the template
-    const template = templates.find(t => t.id === attempt.templateId);
-    
-    if (!template) {
-      return NextResponse.json({ message: 'Template not found' }, { status: 404 });
+        message: 'Lỗi khi nộp bài thi' 
+      }, { status: 500 });
     }
 
     // Get all question IDs for this quiz

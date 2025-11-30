@@ -13,9 +13,9 @@ export default function HomePage() {
   
   const [categories, setCategories] = useState<any[]>([]);
   const [quizzes, setQuizzes] = useState<any[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [userAttempts, setUserAttempts] = useState<any[]>([]);
@@ -25,18 +25,19 @@ export default function HomePage() {
       try {
         // Fetch categories flat với thống kê
         const categoriesRes = await fetch('/api/categories?format=flat&includeStats=true');
-        const categoriesData = await categoriesRes.json();
+        const categoriesResponse = await categoriesRes.json();
+        const categoriesData = categoriesResponse.data?.categories || [];
         setCategories(categoriesData);
 
-        // Fetch quizzes từ category đầu tiên (hoặc tất cả)
+        // Fetch all quizzes initially (show all)
         if (categoriesData.length > 0) {
-          const firstParent = categoriesData.find((cat: any) => !cat.parentId);
-          if (firstParent) {
-            setSelectedParentId(firstParent.id);
-            const templatesRes = await fetch(`/api/categories/${firstParent.id}/quizzes?includeChildren=true`);
-            const templatesData = await templatesRes.json();
-            setQuizzes(templatesData.quizzes || []);
+          const allQuizzesRes = await fetch('/api/quizzes?status=active');
+          if (allQuizzesRes.ok) {
+            const allQuizzesData = await allQuizzesRes.json();
+            setQuizzes(allQuizzesData?.data?.quizzes || []);
           }
+          // Don't select any parent initially to show "Tất cả"
+          setSelectedParentId(null);
         }
         
         // Fetch user attempts nếu đã đăng nhập
@@ -61,7 +62,7 @@ export default function HomePage() {
     fetchData();
   }, [user]);
 
-  const handleCategoryClick = async (categoryId: number) => {
+  const handleCategoryClick = async (categoryId: string) => {
     setSelectedCategoryId(categoryId);
     setLoading(true);
     
@@ -173,17 +174,40 @@ export default function HomePage() {
     return categories.filter((cat: any) => !cat.parentId);
   };
 
-  const getChildCategories = (parentId: number) => {
-    return categories.filter((cat: any) => cat.parentId === parentId);
+  const getChildCategories = (parentId: string | number) => {
+    // Find parent category by ID (ObjectId string)
+    const parent = categories.find((cat: any) => cat.id === parentId);
+    if (!parent) return [];
+    
+    // Match children by displayOrder (legacy ID)
+    return categories.filter((cat: any) => cat.parentId === parent.displayOrder);
   };
 
-  const handleParentSelect = (parentId: number) => {
+  const handleParentSelect = (parentId: string) => {
     setSelectedParentId(parentId);
     setSelectedCategoryId(null);
     handleCategoryClick(parentId);
   };
 
-  const handleChildSelect = (childId: number, parentId: number) => {
+  const handleShowAll = async () => {
+    setSelectedParentId(null);
+    setSelectedCategoryId(null);
+    setLoading(true);
+    
+    try {
+      const res = await fetch('/api/quizzes?status=active');
+      if (res.ok) {
+        const data = await res.json();
+        setQuizzes(data?.data?.quizzes || []);
+      }
+    } catch (error) {
+      console.error('Error fetching all quizzes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChildSelect = (childId: string, parentId: string) => {
     setSelectedParentId(parentId);
     setSelectedCategoryId(childId);
     handleCategoryClick(childId);
@@ -279,6 +303,23 @@ export default function HomePage() {
         <div className="border-t bg-gradient-to-r from-indigo-50 to-purple-50">
           <div className="container mx-auto px-4">
             <div className="flex gap-3 overflow-x-auto py-4 scrollbar-hide">
+              {/* Tất cả button */}
+              <button
+                onClick={handleShowAll}
+                className={`flex items-center gap-2 px-6 py-3 rounded-full whitespace-nowrap transition font-medium ${
+                  selectedParentId === null
+                    ? 'bg-indigo-600 text-white shadow-lg'
+                    : 'bg-white text-gray-700 hover:bg-indigo-50 border border-gray-200'
+                }`}
+              >
+                <span className="text-xl">🎯</span>
+                <span>Tất cả</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                  selectedParentId === null ? 'bg-indigo-500' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {categories.reduce((sum, cat) => sum + (cat.quizCount || 0), 0)}
+                </span>
+              </button>
               {parentCategories.map((cat: any) => (
                 <button
                   key={cat.id}

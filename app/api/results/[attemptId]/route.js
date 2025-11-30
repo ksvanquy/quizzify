@@ -1,9 +1,9 @@
 // app/api/results/[attemptId]/route.js
-
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const dataDir = path.join(process.cwd(), 'app', 'data');
 
 function loadData(filename) {
@@ -20,79 +20,62 @@ function loadData(filename) {
 export async function GET(request, { params }) {
   try {
     const { attemptId: attemptIdParam } = await params;
-    const attemptId = parseInt(attemptIdParam);
+    const attemptId = attemptIdParam; // Keep as string for MongoDB ObjectId
 
-    // Load data
-    const userAttempts = loadData('userAttempts.json');
-    const templates = loadData('quizTemplates.json');
-    const questions = loadData('questions.json');
-    const answers = loadData('answers.json');
-
-    // Find the attempt
-    const attempt = userAttempts.find(a => a.id === attemptId);
+    // Get attempt from NestJS API
+    const headers = {};
+    const auth = request.headers.get('authorization');
+    const cookie = request.headers.get('cookie');
+    if (auth) headers['Authorization'] = auth;
+    if (cookie) headers['cookie'] = cookie;
     
-    if (!attempt) {
-      return NextResponse.json({ message: 'Attempt not found' }, { status: 404 });
+    let attempt;
+    
+    try {
+      const attemptRes = await fetch(`${API_URL}/attempts/${attemptId}`, { headers });
+      if (!attemptRes.ok) {
+        return NextResponse.json({ message: 'Attempt not found' }, { status: 404 });
+      }
+      
+      const attemptData = await attemptRes.json();
+      if (!attemptData.success || !attemptData.data || !attemptData.data.attempt) {
+        return NextResponse.json({ message: 'Attempt not found' }, { status: 404 });
+      }
+      
+      attempt = attemptData.data.attempt;
+      
+    } catch (error) {
+      console.error('Error fetching attempt:', error);
+      return NextResponse.json({ message: 'Failed to load attempt' }, { status: 500 });
     }
 
     if (attempt.status !== 'completed') {
       return NextResponse.json({ message: 'This attempt is not completed yet' }, { status: 400 });
     }
 
-    // Find the template
-    const template = templates.find(t => t.id === attempt.templateId);
+    // NestJS API already returns all necessary data in attempt object
+    // Including questions with user answers, scores, etc.
     
-    if (!template) {
-      return NextResponse.json({ message: 'Template not found' }, { status: 404 });
-    }
-
-    // Calculate duration
-    const startTime = new Date(attempt.startTime);
-    const endTime = new Date(attempt.endTime);
+    // Calculate duration if needed
+    const startTime = new Date(attempt.startedAt);
+    const endTime = new Date(attempt.submittedAt);
     const durationMinutes = Math.round((endTime - startTime) / 1000 / 60);
-
-    // Get question IDs based on selection mode
-    let questionIds = [];
-    if (template.questionSelection?.mode === 'manual') {
-      questionIds = template.questionSelection.manualQuestionIds || [];
-    } else if (template.questionSelection?.mode === 'random') {
-      // For random mode, we need to get the actual questions from the attempt
-      // since they were randomly selected when the quiz started
-      questionIds = attempt.attemptDetails?.map(detail => detail.questionId) || [];
-    } else {
-      // Fallback: try to get from old questionIds field
-      questionIds = template.questionIds || [];
-    }
-
-    // Get full question details with options
-    const questionsWithDetails = questionIds.map(qId => {
-      const question = questions.find(q => q.id === qId);
-      if (!question) return null;
-
-      // Add options for single_choice and multi_choice questions
-      if (question.type === 'single_choice' || question.type === 'multi_choice') {
-        const options = answers.filter(opt => opt.questionId === qId);
-        return { ...question, options };
-      }
-
-      return question;
-    }).filter(q => q !== null);
 
     return NextResponse.json({
       attemptId: attempt.id,
-      quizTitle: template.name,
-      score: attempt.score,
-      maxScore: attempt.maxScore || attempt.totalQuestions,
-      correctCount: attempt.correctCount || attempt.score,
-      totalQuestions: attempt.totalQuestions,
+      quizTitle: attempt.templateId, // May need to fetch template name if needed
+      score: attempt.totalScore,
+      maxScore: attempt.questions?.length || 0,
+      correctCount: attempt.questions?.filter(q => q.isCorrect).length || 0,
+      totalQuestions: attempt.questions?.length || 0,
       percentage: attempt.percentage,
-      passingScore: template.passingScore,
+      passingScore: 0, // Need to fetch template if needed
       passed: attempt.passed,
-      durationMinutes: durationMinutes,
-      startTime: attempt.startTime,
-      endTime: attempt.endTime,
-      attemptDetails: attempt.attemptDetails || [],
-      questions: template.revealAnswersAfterSubmission ? questionsWithDetails : []
+      durationMinutes: attempt.timeSpentSeconds ? Math.round(attempt.timeSpentSeconds / 60) : durationMinutes,
+      startTime: attempt.startedAt,
+      endTime: attempt.submittedAt,
+      questions: attempt.questions || [], // NestJS API includes all question details
+      userAnswers: attempt.userAnswers || {}
     });
 
   } catch (error) {

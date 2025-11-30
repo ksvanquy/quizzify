@@ -1,64 +1,55 @@
 // app/api/categories/[categoryId]/quizzes/route.js
-
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 
-const dataDir = path.join(process.cwd(), 'app', 'data');
-
-function loadData(filename) {
-  try {
-    const filePath = path.join(dataDir, filename);
-    const fileContents = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(fileContents);
-  } catch (error) {
-    console.error(`Error loading ${filename}:`, error);
-    return [];
-  }
-}
-
-// Lấy tất cả category con
-function getAllChildCategoryIds(categoryId, categories) {
-  const children = categories.filter(cat => cat.parentId === categoryId);
-  const childIds = children.map(cat => cat.id);
-  
-  // Đệ quy lấy các category con của con
-  children.forEach(child => {
-    childIds.push(...getAllChildCategoryIds(child.id, categories));
-  });
-  
-  return childIds;
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export async function GET(request, { params }) {
   try {
-    const { categoryId: categoryIdParam } = await params;
-    const categoryId = parseInt(categoryIdParam);
+    const { categoryId } = await params;
     
     const { searchParams } = new URL(request.url);
-    const includeChildren = searchParams.get('includeChildren') !== 'false'; // Mặc định true
-    const difficulty = searchParams.get('difficulty'); // easy, medium, hard
-    const sortBy = searchParams.get('sortBy') || 'name'; // name, duration, difficulty
+    const includeChildren = searchParams.get('includeChildren') !== 'false';
+    const difficulty = searchParams.get('difficulty');
+    const sortBy = searchParams.get('sortBy') || 'name';
 
-    const categories = loadData('categories.json');
-    const quizTemplates = loadData('quizTemplates.json');
+    // Fetch from NestJS API
+    const headers = {};
+    const auth = request.headers.get('authorization');
+    const cookie = request.headers.get('cookie');
+    if (auth) headers['Authorization'] = auth;
+    if (cookie) headers['cookie'] = cookie;
 
-    // Kiểm tra category tồn tại
-    const category = categories.find(cat => cat.id === categoryId);
-    if (!category) {
-      return NextResponse.json({ message: 'Category not found' }, { status: 404 });
-    }
-
-    // Lấy danh sách categoryIds cần filter
+    // Fetch all categories to find children if needed
     let categoryIds = [categoryId];
+    
     if (includeChildren) {
-      categoryIds = [...categoryIds, ...getAllChildCategoryIds(categoryId, categories)];
+      const categoriesRes = await fetch(`${API_URL}/categories?active=true`, { headers });
+      if (categoriesRes.ok) {
+        const categoriesData = await categoriesRes.json();
+        const categories = categoriesData?.data?.categories || [];
+        
+        // Find the target category
+        const targetCategory = categories.find(cat => cat.id === categoryId);
+        if (targetCategory) {
+          // Find children by matching displayOrder (legacy ID mapping)
+          const children = categories.filter(cat => cat.parentId === targetCategory.displayOrder);
+          categoryIds.push(...children.map(c => c.id));
+        }
+      }
     }
 
-    // Lọc quiz theo category
-    let quizzes = quizTemplates.filter(quiz => 
-      categoryIds.includes(quiz.categoryId) && quiz.status === 'active'
-    );
+    // Fetch all quizzes
+    const quizzesRes = await fetch(`${API_URL}/quizzes?status=active`, { headers });
+    
+    if (!quizzesRes.ok) {
+      return NextResponse.json({ message: 'Failed to load quizzes' }, { status: 500 });
+    }
+
+    const quizzesData = await quizzesRes.json();
+    const allQuizzes = quizzesData?.data?.quizzes || [];
+    
+    // Filter quizzes by categoryIds
+    let quizzes = allQuizzes.filter(quiz => categoryIds.includes(quiz.categoryId));
 
     // Lọc theo difficulty nếu có
     if (difficulty) {
@@ -77,30 +68,9 @@ export async function GET(request, { params }) {
       }
     });
 
-    // Thêm thông tin category vào mỗi quiz
-    const quizzesWithCategory = quizzes.map(quiz => {
-      const quizCategory = categories.find(cat => cat.id === quiz.categoryId);
-      return {
-        ...quiz,
-        category: quizCategory ? {
-          id: quizCategory.id,
-          name: quizCategory.name,
-          slug: quizCategory.slug,
-          icon: quizCategory.icon
-        } : null
-      };
-    });
-
     return NextResponse.json({
-      category: {
-        id: category.id,
-        name: category.name,
-        slug: category.slug,
-        icon: category.icon,
-        description: category.description
-      },
-      quizzes: quizzesWithCategory,
-      total: quizzesWithCategory.length
+      quizzes: quizzes,
+      total: quizzes.length
     });
 
   } catch (error) {

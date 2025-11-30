@@ -68,8 +68,21 @@ export async function GET(request: Request) {
       const bookmarks = bookmarksData?.data?.bookmarks || bookmarksData?.bookmarks || [];
       const watchlist = watchlistData?.data?.watchlist || watchlistData?.watchlist || [];
       
-      // Load quiz templates from local data
-      const quizTemplates = loadData('quizTemplates.json');
+      // Fetch quiz templates from NestJS API (with fallback to local JSON)
+      let quizTemplates: any[] = [];
+      try {
+        const quizzesRes = await fetch(`${API_URL}/quizzes?status=active`, { headers });
+        if (quizzesRes.ok) {
+          const quizzesData = await quizzesRes.json();
+          quizTemplates = quizzesData?.data?.quizzes || quizzesData?.data || quizzesData || [];
+        } else {
+          // Fallback to local JSON if API fails
+          quizTemplates = loadData('quizTemplates.json');
+        }
+      } catch (err) {
+        console.warn('Failed to fetch quiz templates from API, using local JSON:', err);
+        quizTemplates = loadData('quizTemplates.json');
+      }
       
       // Match quizzes with bookmark/watchlist IDs
       const bookmarkQuizIds = bookmarks.map((b: any) => String(b.quizId));
