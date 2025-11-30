@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import LoginModal from './components/LoginModal';
 
 export default function HomePage() {
   // IMPORTANT: useAuth must be called first, before any other hooks
@@ -17,8 +16,6 @@ export default function HomePage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loginModalMode, setLoginModalMode] = useState<'login' | 'register'>('login');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [userAttempts, setUserAttempts] = useState<any[]>([]);
@@ -89,8 +86,7 @@ export default function HomePage() {
     e.stopPropagation();
     
     if (!user) {
-      setLoginModalMode('login');
-      setShowLoginModal(true);
+      router.push('/auth/login');
       return;
     }
 
@@ -113,8 +109,7 @@ export default function HomePage() {
     e.stopPropagation();
     
     if (!user) {
-      setLoginModalMode('login');
-      setShowLoginModal(true);
+      router.push('/auth/login');
       return;
     }
 
@@ -261,8 +256,7 @@ export default function HomePage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    setLoginModalMode('login');
-                    setShowLoginModal(true);
+                    router.push('/auth/login');
                   }}
                   className="px-6 py-2 bg-white text-indigo-600 border-2 border-indigo-600 rounded-lg hover:bg-indigo-50 transition font-medium"
                 >
@@ -270,8 +264,7 @@ export default function HomePage() {
                 </button>
                 <button
                   onClick={() => {
-                    setLoginModalMode('register');
-                    setShowLoginModal(true);
+                    router.push('/auth/register');
                   }}
                   className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
                 >
@@ -531,13 +524,6 @@ export default function HomePage() {
           animation: slide-up 0.3s ease-out;
         }
       `}</style>
-
-      {/* Login Modal */}
-      <LoginModal 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)} 
-        initialMode={loginModalMode}
-      />
 
       {/* Toast Notification */}
       {toast && (

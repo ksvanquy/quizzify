@@ -5,9 +5,10 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface LoginFormProps {
   initialMode?: 'login' | 'register';
+  onSubmit?: (data: { username: string; email: string; password: string; name: string; isLogin: boolean }) => Promise<void>;
 }
 
-export default function LoginForm({ initialMode = 'login' }: LoginFormProps) {
+export default function LoginForm({ initialMode = 'login', onSubmit }: LoginFormProps) {
   const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [formData, setFormData] = useState({
     username: '',
@@ -25,10 +26,14 @@ export default function LoginForm({ initialMode = 'login' }: LoginFormProps) {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        await login(formData.username, formData.password);
+      if (onSubmit) {
+        await onSubmit({ ...formData, isLogin });
       } else {
-        await register(formData.username, formData.email, formData.password, formData.name);
+        if (isLogin) {
+          await login(formData.username, formData.password);
+        } else {
+          await register(formData.username, formData.email, formData.password, formData.name);
+        }
       }
       setFormData({ username: '', email: '', password: '', name: '' });
     } catch (err: any) {

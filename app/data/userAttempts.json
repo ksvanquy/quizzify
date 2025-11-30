@@ -3832,5 +3832,23 @@
     "percentage": 0,
     "passed": false,
     "correctCount": 0
+  },
+  {
+    "id": 5253,
+    "userId": 6,
+    "templateId": 2,
+    "startTime": "2025-11-30T08:13:59.529Z",
+    "status": "in_progress",
+    "totalQuestions": 4,
+    "attemptDetails": []
+  },
+  {
+    "id": 5254,
+    "userId": 6,
+    "templateId": 2,
+    "startTime": "2025-11-30T08:13:59.551Z",
+    "status": "in_progress",
+    "totalQuestions": 4,
+    "attemptDetails": []
   }
 ]

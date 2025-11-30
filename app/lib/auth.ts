@@ -4,7 +4,9 @@ export async function login(username: string, password: string) {
   const res = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }), // ⚠️ BẮT BUỘC
+    // Include `email` as an alias for `username` so backends expecting
+    // an `email` field still receive the value from the login form.
+    body: JSON.stringify({ username, email: username, password }), // ⚠️ BẮT BUỘC
   });
 
   return res.json();
@@ -50,6 +52,17 @@ export async function logout(accessToken: string) {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
+    cache: "no-store"
+  });
+
+  return res.json();
+}
+
+// Logout using cookie-based flow: server clears the cookie when browser sends it.
+export async function logoutWithCookie() {
+  const res = await fetch(`${API_URL}/auth/logout`, {
+    method: "POST",
+    credentials: 'include',
     cache: "no-store"
   });
 
