@@ -198,19 +198,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateProfile = async (updates: Partial<User>) => {
-    const response = await fetch('/api/profile', {
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+
+    const opts: RequestInit = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates)
-    });
+    };
 
+    if (accessToken) {
+      opts.headers = { ...(opts.headers || {}), Authorization: `Bearer ${accessToken}` } as any;
+    } else {
+      // If no token, send cookies so server can validate session via cookie
+      opts.credentials = 'include';
+    }
+
+    const response = await fetch(`${API_URL}/auth/profile`, opts);
     const data = await response.json();
-    
+
     if (!response.ok) {
       throw new Error(data.message || 'Cập nhật thất bại');
     }
 
-    setUser(data.user);
+    // Normalize returned user shape
+    const newUser = data?.data?.user || data?.user || data;
+    setUser(newUser);
   };
 
   const addBookmark = async (quizId: number) => {

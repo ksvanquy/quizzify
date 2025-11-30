@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { API_URL } from '../lib/api';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -41,9 +42,26 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch('/api/profile');
-      const data = await res.json();
-      setProfileData(data);
+      // Use internal proxy `/api/profile` so requests stay same-origin.
+      // If we have an accessToken, send it in Authorization header; otherwise
+      // rely on cookies (browser will include same-origin cookies or we set credentials).
+      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const opts: RequestInit = { method: 'GET', cache: 'no-store' };
+      if (accessToken) {
+        opts.headers = { Authorization: `Bearer ${accessToken}` } as any;
+      } else {
+        // include cookies for cookie-based session validation
+        opts.credentials = 'include';
+      }
+
+      const res = await fetch('/api/profile', opts);
+      if (!res.ok) {
+        setProfileData(null);
+        return;
+      }
+
+      const json = await res.json();
+      setProfileData(json?.data?.user || json?.data || json?.user || json);
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
