@@ -1,4 +1,4 @@
 git status
 git add .
-git commit -m "questions"
+git commit -m "remove json"
 git push
