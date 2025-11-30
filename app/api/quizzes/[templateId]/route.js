@@ -12,10 +12,32 @@ async function forwardRequest(path, req, init = {}) {
   const cookie = req.headers.get('cookie');
   
   console.log(`[forwardRequest] ${init.method || 'GET'} ${path}`);
-  console.log('  Cookie header:', cookie ? `${cookie.substring(0, 100)}...` : 'MISSING');
-  console.log('  Has accessToken:', cookie?.includes('accessToken') ? 'YES' : 'NO');
-
-  if (auth) headers['Authorization'] = auth;
+  console.log('  Full Cookie:', cookie || 'MISSING');
+  
+  // Parse cookies to extract accessToken
+  const cookies = {};
+  if (cookie) {
+    cookie.split(';').forEach(c => {
+      const [name, ...valueParts] = c.trim().split('=');
+      cookies[name] = valueParts.join('=');
+    });
+  }
+  console.log('  Parsed cookies:', Object.keys(cookies).join(', '));
+  console.log('  Has accessToken cookie:', !!cookies['accessToken'] ? 'YES' : 'NO');
+  
+  // CRITICAL: NestJS needs Authorization header, not cookie!
+  // Extract accessToken from cookie and add to Authorization header
+  if (cookies['accessToken']) {
+    headers['Authorization'] = `Bearer ${cookies['accessToken']}`;
+    console.log('  ✅ Set Authorization header from cookie');
+  } else if (auth) {
+    headers['Authorization'] = auth;
+    console.log('  ✅ Using existing Authorization header');
+  } else {
+    console.log('  ❌ NO Authorization header or accessToken cookie!');
+  }
+  
+  // Still forward cookie header for any other uses
   if (cookie) headers['cookie'] = cookie;
 
   const url = `${API_URL}${path}`;
