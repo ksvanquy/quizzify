@@ -1,7 +1,7 @@
 [
   {
     "id": 1,
-    "username": "nguyenvana",
+    "username": "nguyenvana1",
     "password": "$2a$10$rKJ3YOLjZ0KW0lXr5k5k5eQMxV8h5kYbZ8hL0K5k5k5k5k5k5k5k5",
     "name": "Nguyễn Văn A",
     "email": "a.nguyen@example.com",
@@ -68,5 +68,19 @@
     "address": "",
     "createdAt": "2025-11-26T09:06:28.006Z",
     "lastLogin": "2025-11-26T09:07:04.591Z"
+  },
+  {
+    "id": 6,
+    "username": "nguyenvana",
+    "password": "123456",
+    "name": "nguyễn văn a",
+    "email": "nguyenvana@gmail.com",
+    "avatar": "https://ui-avatars.com/api/?name=nguy%E1%BB%85n%20v%C4%83n%20a&background=F59E0B&color=fff",
+    "role": "student",
+    "bio": "",
+    "phone": "",
+    "address": "",
+    "createdAt": "2025-11-30T07:47:38.683Z",
+    "lastLogin": "2025-11-30T07:47:38.683Z"
   }
 ]
