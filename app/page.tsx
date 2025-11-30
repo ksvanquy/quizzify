@@ -392,9 +392,9 @@ export default function HomePage() {
                         <button
                           onClick={(e) => handleBookmarkToggle(e, quiz.id)}
                           className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition backdrop-blur-sm"
-                          title={user?.bookmarks?.includes(quiz.id) ? 'Xóa bookmark' : 'Thêm bookmark'}
+                          title={isBookmarked(quiz.id) ? 'Xóa bookmark' : 'Thêm bookmark'}
                         >
-                          {user?.bookmarks?.includes(quiz.id) ? (
+                          {isBookmarked(quiz.id) ? (
                             <svg className="w-4 h-4 fill-yellow-300" viewBox="0 0 20 20">
                               <path d="M10 2l2.5 6.5L19 9l-5 4.5L15 20l-5-3.5L5 20l1-6.5L1 9l6.5-.5L10 2z" />
                             </svg>
@@ -407,9 +407,9 @@ export default function HomePage() {
                         <button
                           onClick={(e) => handleWatchlistToggle(e, quiz.id)}
                           className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition backdrop-blur-sm"
-                          title={user?.watchlist?.includes(quiz.id) ? 'Xóa khỏi watchlist' : 'Thêm vào watchlist'}
+                          title={isInWatchlist(quiz.id) ? 'Xóa khỏi watchlist' : 'Thêm vào watchlist'}
                         >
-                          {user?.watchlist?.includes(quiz.id) ? (
+                          {isInWatchlist(quiz.id) ? (
                             <svg className="w-4 h-4 fill-red-400" viewBox="0 0 20 20">
                               <path d="M10 18l-1.45-1.32C3.4 12.36 0 9.28 0 5.5 0 2.42 2.42 0 5.5 0c1.74 0 3.41.81 4.5 2.09C11.09.81 12.76 0 14.5 0 17.58 0 20 2.42 20 5.5c0 3.78-3.4 6.86-8.55 11.18L10 18z" />
                             </svg>

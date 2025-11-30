@@ -16,8 +16,8 @@ interface User {
   bio?: string;
   phone?: string;
   address?: string;
-  bookmarks: number[];
-  watchlist: number[];
+  bookmarks: string[];
+  watchlist: string[];
 }
 
 interface AuthContextType {
@@ -27,12 +27,12 @@ interface AuthContextType {
   register: (username: string, email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
-  addBookmark: (quizId: number) => Promise<void>;
-  removeBookmark: (quizId: number) => Promise<void>;
-  addToWatchlist: (quizId: number) => Promise<void>;
-  removeFromWatchlist: (quizId: number) => Promise<void>;
-  isBookmarked: (quizId: number) => boolean;
-  isInWatchlist: (quizId: number) => boolean;
+  addBookmark: (quizId: string | number) => Promise<void>;
+  removeBookmark: (quizId: string | number) => Promise<void>;
+  addToWatchlist: (quizId: string | number) => Promise<void>;
+  removeFromWatchlist: (quizId: string | number) => Promise<void>;
+  isBookmarked: (quizId: string | number) => boolean;
+  isInWatchlist: (quizId: string | number) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -99,16 +99,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (profileData) {
         // Load bookmarks and watchlist from server routes (remain as app routes)
+        const headers: Record<string, string> = {};
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+        
         const [bookmarksRes, watchlistRes] = await Promise.all([
-          fetch('/api/bookmarks'),
-          fetch('/api/watchlist')
+          fetch('/api/bookmarks', { headers, credentials: 'include' }),
+          fetch('/api/watchlist', { headers, credentials: 'include' })
         ]);
         
         const bookmarksData = await bookmarksRes.json();
         const watchlistData = await watchlistRes.json();
         
-        const bookmarkIds = bookmarksData.bookmarks?.map((b: any) => b.quizId) || [];
-        const watchlistIds = watchlistData.watchlist?.map((w: any) => w.quizId) || [];
+        // Normalize NestJS ApiResponse: data.bookmarks or bookmarks
+        const bookmarks = bookmarksData?.data?.bookmarks || bookmarksData?.bookmarks || [];
+        const watchlist = watchlistData?.data?.watchlist || watchlistData?.watchlist || [];
+        
+        const bookmarkIds = bookmarks.map((b: any) => b.quizId) || [];
+        const watchlistIds = watchlist.map((w: any) => w.quizId) || [];
 
         setUser({
           ...profileData,
@@ -142,16 +151,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Load bookmarks and watchlist after login (app routes)
+    const headers: Record<string, string> = {};
+    if (data.data?.accessToken) {
+      headers['Authorization'] = `Bearer ${data.data.accessToken}`;
+    }
+    
     const [bookmarksRes, watchlistRes] = await Promise.all([
-      fetch('/api/bookmarks'),
-      fetch('/api/watchlist')
+      fetch('/api/bookmarks', { headers, credentials: 'include' }),
+      fetch('/api/watchlist', { headers, credentials: 'include' })
     ]);
     
     const bookmarksData = await bookmarksRes.json();
     const watchlistData = await watchlistRes.json();
     
-    const bookmarkIds = bookmarksData.bookmarks?.map((b: any) => b.quizId) || [];
-    const watchlistIds = watchlistData.watchlist?.map((w: any) => w.quizId) || [];
+    // Normalize NestJS ApiResponse: data.bookmarks or bookmarks
+    const bookmarks = bookmarksData?.data?.bookmarks || bookmarksData?.bookmarks || [];
+    const watchlist = watchlistData?.data?.watchlist || watchlistData?.watchlist || [];
+    
+    const bookmarkIds = bookmarks.map((b: any) => b.quizId) || [];
+    const watchlistIds = watchlist.map((w: any) => w.quizId) || [];
 
     setUser({
       ...(data.data?.user || {}),
@@ -225,72 +243,122 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(newUser);
   };
 
-  const addBookmark = async (quizId: number) => {
+  const addBookmark = async (quizId: string | number) => {
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+    
     const response = await fetch('/api/bookmarks', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ quizId })
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({ quizId: String(quizId) })
     });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Add bookmark failed:', response.status, errorData);
+      throw new Error(errorData.message || 'Failed to add bookmark');
+    }
 
     if (response.ok && user) {
       // Refresh bookmarks from server
-      const bookmarksRes = await fetch('/api/bookmarks');
+      const bookmarksRes = await fetch('/api/bookmarks', { headers, credentials: 'include' });
       const bookmarksData = await bookmarksRes.json();
-      const bookmarkIds = bookmarksData.bookmarks.map((b: any) => b.quizId);
+      // Normalize NestJS ApiResponse: data.bookmarks or bookmarks
+      const bookmarks = bookmarksData?.data?.bookmarks || bookmarksData?.bookmarks || [];
+      const bookmarkIds = bookmarks.map((b: any) => b.quizId);
       setUser({ ...user, bookmarks: bookmarkIds });
     }
   };
 
-  const removeBookmark = async (quizId: number) => {
+  const removeBookmark = async (quizId: string | number) => {
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+    
     const response = await fetch(`/api/bookmarks?quizId=${quizId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers,
+      credentials: 'include'
     });
 
     if (response.ok && user) {
       // Refresh bookmarks from server
-      const bookmarksRes = await fetch('/api/bookmarks');
+      const bookmarksRes = await fetch('/api/bookmarks', { headers, credentials: 'include' });
       const bookmarksData = await bookmarksRes.json();
-      const bookmarkIds = bookmarksData.bookmarks.map((b: any) => b.quizId);
+      // Normalize NestJS ApiResponse: data.bookmarks or bookmarks
+      const bookmarks = bookmarksData?.data?.bookmarks || bookmarksData?.bookmarks || [];
+      const bookmarkIds = bookmarks.map((b: any) => b.quizId);
       setUser({ ...user, bookmarks: bookmarkIds });
     }
   };
 
-  const addToWatchlist = async (quizId: number) => {
+  const addToWatchlist = async (quizId: string | number) => {
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+    
     const response = await fetch('/api/watchlist', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ quizId })
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({ quizId: String(quizId) })
     });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Add to watchlist failed:', response.status, errorData);
+      throw new Error(errorData.message || 'Failed to add to watchlist');
+    }
 
     if (response.ok && user) {
       // Refresh watchlist from server
-      const watchlistRes = await fetch('/api/watchlist');
+      const watchlistRes = await fetch('/api/watchlist', { headers, credentials: 'include' });
       const watchlistData = await watchlistRes.json();
-      const watchlistIds = watchlistData.watchlist.map((w: any) => w.quizId);
+      // Normalize NestJS ApiResponse: data.watchlist or watchlist
+      const watchlist = watchlistData?.data?.watchlist || watchlistData?.watchlist || [];
+      const watchlistIds = watchlist.map((w: any) => w.quizId);
       setUser({ ...user, watchlist: watchlistIds });
     }
   };
 
-  const removeFromWatchlist = async (quizId: number) => {
+  const removeFromWatchlist = async (quizId: string | number) => {
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+    
     const response = await fetch(`/api/watchlist?quizId=${quizId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers,
+      credentials: 'include'
     });
 
     if (response.ok && user) {
       // Refresh watchlist from server
-      const watchlistRes = await fetch('/api/watchlist');
+      const watchlistRes = await fetch('/api/watchlist', { headers, credentials: 'include' });
       const watchlistData = await watchlistRes.json();
-      const watchlistIds = watchlistData.watchlist.map((w: any) => w.quizId);
+      // Normalize NestJS ApiResponse: data.watchlist or watchlist
+      const watchlist = watchlistData?.data?.watchlist || watchlistData?.watchlist || [];
+      const watchlistIds = watchlist.map((w: any) => w.quizId);
       setUser({ ...user, watchlist: watchlistIds });
     }
   };
 
-  const isBookmarked = (quizId: number) => {
-    return user?.bookmarks.includes(quizId) || false;
+  const isBookmarked = (quizId: string | number) => {
+    return user?.bookmarks.includes(String(quizId)) || false;
   };
 
-  const isInWatchlist = (quizId: number) => {
-    return user?.watchlist.includes(quizId) || false;
+  const isInWatchlist = (quizId: string | number) => {
+    return user?.watchlist.includes(String(quizId)) || false;
   };
 
   return (

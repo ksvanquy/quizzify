@@ -1,0 +1,76 @@
+import { NextResponse } from 'next/server';
+import { API_URL } from '@/app/lib/api';
+
+async function forwardRequest(path: string, req: Request, init: RequestInit = {}) {
+  const headers: Record<string, string> = { ...(init.headers as Record<string, string> || {}) };
+
+  const auth = req.headers.get('authorization');
+  const cookie = req.headers.get('cookie');
+
+  if (auth) headers['Authorization'] = auth;
+  if (cookie) headers['cookie'] = cookie;
+
+  const url = `${API_URL}${path}`;
+
+  const res = await fetch(url, { ...init, headers, redirect: 'follow' });
+  const text = await res.text();
+
+  let body: any = text;
+  try {
+    body = JSON.parse(text);
+  } catch (e) {
+    // leave as text
+  }
+
+  return { status: res.status, body };
+}
+
+// GET /api/watchlist - Lấy tất cả watchlist items của user
+export async function GET(request: Request) {
+  try {
+    const result = await forwardRequest('/watchlists', request, { method: 'GET' });
+    return NextResponse.json(result.body, { status: result.status });
+  } catch (err: any) {
+    console.error('Error proxying GET /api/watchlist -> /watchlists', err);
+    return NextResponse.json({ message: 'Lỗi server', error: err?.message || String(err) }, { status: 500 });
+  }
+}
+
+// POST /api/watchlist - Thêm item vào watchlist
+export async function POST(request: Request) {
+  try {
+    const body = await request.text();
+    const opts: RequestInit = {
+      method: 'POST',
+      body,
+      headers: {
+        'Content-Type': request.headers.get('content-type') || 'application/json'
+      }
+    };
+
+    const result = await forwardRequest('/watchlists', request, opts);
+    return NextResponse.json(result.body, { status: result.status });
+  } catch (err: any) {
+    console.error('Error proxying POST /api/watchlist -> /watchlists', err);
+    return NextResponse.json({ message: 'Lỗi server', error: err?.message || String(err) }, { status: 500 });
+  }
+}
+
+// DELETE /api/watchlist?quizId=... - Xóa item khỏi watchlist
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const quizId = searchParams.get('quizId');
+
+    if (!quizId) {
+      return NextResponse.json({ message: 'Quiz ID không hợp lệ' }, { status: 400 });
+    }
+
+    // Forward to /watchlists/:quizId
+    const result = await forwardRequest(`/watchlists/${quizId}`, request, { method: 'DELETE' });
+    return NextResponse.json(result.body, { status: result.status });
+  } catch (err: any) {
+    console.error('Error proxying DELETE /api/watchlist -> /watchlists/:quizId', err);
+    return NextResponse.json({ message: 'Lỗi server', error: err?.message || String(err) }, { status: 500 });
+  }
+}

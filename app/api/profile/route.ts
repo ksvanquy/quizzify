@@ -1,5 +1,20 @@
 import { NextResponse } from 'next/server';
 import { API_URL } from '@/app/lib/api';
+import fs from 'fs';
+import path from 'path';
+
+const dataDir = path.join(process.cwd(), 'app', 'data');
+
+function loadData(filename: string) {
+  try {
+    const filePath = path.join(dataDir, filename);
+    const fileContents = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(fileContents);
+  } catch (error) {
+    console.error(`Error loading ${filename}:`, error);
+    return [];
+  }
+}
 
 async function forwardRequest(path: string, req: Request, init: RequestInit = {}) {
   // Forward Authorization or Cookie from incoming request when available
@@ -30,6 +45,56 @@ async function forwardRequest(path: string, req: Request, init: RequestInit = {}
 export async function GET(request: Request) {
   try {
     const result = await forwardRequest('/auth/profile', request, { method: 'GET' });
+    
+    if (result.status === 200) {
+      // Enrich user data with bookmarked and watchlisted quizzes
+      const userData = result.body?.data?.user || result.body?.user || result.body;
+      
+      // Fetch bookmarks and watchlist from NestJS
+      const auth = request.headers.get('authorization');
+      const cookie = request.headers.get('cookie');
+      const headers: Record<string, string> = {};
+      if (auth) headers['Authorization'] = auth;
+      if (cookie) headers['cookie'] = cookie;
+      
+      const [bookmarksRes, watchlistRes] = await Promise.all([
+        fetch(`${API_URL}/bookmarks`, { headers }),
+        fetch(`${API_URL}/watchlists`, { headers })
+      ]);
+      
+      const bookmarksData = bookmarksRes.ok ? await bookmarksRes.json() : { data: { bookmarks: [] } };
+      const watchlistData = watchlistRes.ok ? await watchlistRes.json() : { data: { watchlist: [] } };
+      
+      const bookmarks = bookmarksData?.data?.bookmarks || bookmarksData?.bookmarks || [];
+      const watchlist = watchlistData?.data?.watchlist || watchlistData?.watchlist || [];
+      
+      // Load quiz templates from local data
+      const quizTemplates = loadData('quizTemplates.json');
+      
+      // Match quizzes with bookmark/watchlist IDs
+      const bookmarkQuizIds = bookmarks.map((b: any) => String(b.quizId));
+      const watchlistQuizIds = watchlist.map((w: any) => String(w.quizId));
+      
+      const bookmarkedQuizzes = bookmarkQuizIds
+        .map((id: string) => quizTemplates.find((q: any) => String(q.id) === id && q.status === 'active'))
+        .filter(Boolean);
+        
+      const watchlistedQuizzes = watchlistQuizIds
+        .map((id: string) => quizTemplates.find((q: any) => String(q.id) === id && q.status === 'active'))
+        .filter(Boolean);
+      
+      return NextResponse.json({
+        ...result.body,
+        data: {
+          user: {
+            ...userData,
+            bookmarkedQuizzes,
+            watchlistedQuizzes
+          }
+        }
+      }, { status: result.status });
+    }
+    
     return NextResponse.json(result.body, { status: result.status });
   } catch (err: any) {
     console.error('Error proxying GET /api/profile -> /auth/profile', err);

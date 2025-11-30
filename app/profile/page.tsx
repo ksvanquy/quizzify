@@ -61,6 +61,7 @@ export default function ProfilePage() {
       }
 
       const json = await res.json();
+      // API now returns user data with bookmarkedQuizzes and watchlistedQuizzes
       setProfileData(json?.data?.user || json?.data || json?.user || json);
     } catch (error) {
       console.error('Error fetching profile:', error);
