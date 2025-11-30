@@ -16,16 +16,24 @@ export async function POST(req: Request) {
     return NextResponse.json(data);
   }
 
-  const response = NextResponse.json({ success: true });
+  console.log('Login successful, setting cookies...');
+  console.log('AccessToken present:', !!data.data.accessToken);
+
+  // Return full response including user data
+  const response = NextResponse.json(data);
 
   response.cookies.set("accessToken", data.data.accessToken, {
     httpOnly: true,
     path: "/",
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
   });
 
   response.cookies.set("refreshToken", data.data.refreshToken, {
     httpOnly: true,
     path: "/",
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
   });
 
   return response;

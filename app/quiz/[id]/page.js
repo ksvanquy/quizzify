@@ -34,7 +34,12 @@ export default function QuizPage({ params }) {
 
     async function fetchQuiz() {
       try {
-        const response = await fetch(`/api/quizzes/${unwrappedParams.id}`);
+        console.log('Fetching quiz with user:', user);
+        console.log('Document cookies:', document.cookie);
+        
+        const response = await fetch(`/api/quizzes/${unwrappedParams.id}`, {
+          credentials: 'include' // Important: send cookies
+        });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           console.error('API Error:', response.status, errorData);

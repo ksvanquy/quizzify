@@ -1,88 +1,85 @@
 // app/api/quizzes/[templateId]/route.js
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { loadData, shuffleArray } from './utils/data';
-import fs from 'fs';
-import path from 'path';
+import { shuffleArray } from './utils/data';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// Helper function like bookmarks route
+async function forwardRequest(path, req, init = {}) {
+  const headers = { ...(init.headers || {}) };
+
+  const auth = req.headers.get('authorization');
+  const cookie = req.headers.get('cookie');
+  
+  console.log(`[forwardRequest] ${init.method || 'GET'} ${path}`);
+  console.log('  Cookie header:', cookie ? `${cookie.substring(0, 100)}...` : 'MISSING');
+  console.log('  Has accessToken:', cookie?.includes('accessToken') ? 'YES' : 'NO');
+
+  if (auth) headers['Authorization'] = auth;
+  if (cookie) headers['cookie'] = cookie;
+
+  const url = `${API_URL}${path}`;
+  
+  const fetchOptions = { ...init, headers, redirect: 'follow' };
+  
+  // Only add body if it exists and method is not GET
+  if (init.body && init.method !== 'GET') {
+    fetchOptions.body = init.body;
+  }
+
+  const res = await fetch(url, fetchOptions);
+  const text = await res.text();
+
+  let body = text;
+  try {
+    body = JSON.parse(text);
+  } catch (e) {
+    // leave as text
+  }
+
+  return { status: res.status, body };
+}
+
 export async function GET(request, { params }) {
   try {
-    const { templateId: templateIdParam } = await params;
-    const templateId = parseInt(templateIdParam);
-
-    // Check authentication
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('session');
-
-    if (!sessionCookie) {
-      return NextResponse.json({ 
-        message: 'Bạn cần đăng nhập để làm bài thi.' 
-      }, { status: 401 });
-    }
-
-    const session = JSON.parse(sessionCookie.value);
-    const userId = session.userId;
-
-    // 1. Tải Dữ Liệu từ NestJS API
-    const headers = {
-      'Authorization': `Bearer ${session.token || session.accessToken || ''}`,
-    };
+    const { templateId } = await params;
     
-    let template, questions;
+    // Fetch quiz template using forwardRequest
+    const templateResult = await forwardRequest(`/quizzes/${templateId}`, request, { method: 'GET' });
     
-    try {
-      // Lấy quiz template từ NestJS API
-      const templateRes = await fetch(`${API_URL}/quizzes/${templateId}`, { headers });
-      if (!templateRes.ok) {
-        return NextResponse.json({ message: 'Quiz template not found.' }, { status: 404 });
-      }
-      
-      const templateData = await templateRes.json();
-      if (!templateData.success || !templateData.data || !templateData.data.quiz) {
-        return NextResponse.json({ message: 'Quiz template not found.' }, { status: 404 });
-      }
-      
-      template = templateData.data.quiz;
-      
-      if (template.status !== 'active') {
-        return NextResponse.json({ message: 'Quiz template is not active.' }, { status: 404 });
-      }
-      
-      // Lấy questions từ NestJS API
-      const questionsRes = await fetch(`${API_URL}/questions`, { headers });
-      if (!questionsRes.ok) {
-        return NextResponse.json({ message: 'Failed to load questions.' }, { status: 500 });
-      }
-      
-      const questionsData = await questionsRes.json();
-      // API trả về {success, data: {questions: [...], total: number}}
-      questions = questionsData?.data?.questions || [];
-      
-      console.log('Template loaded:', template?.name);
-      console.log('Questions loaded:', questions?.length);
-      
-    } catch (error) {
-      console.error('Error fetching from API:', error);
-      return NextResponse.json({ message: 'Failed to load quiz data.' }, { status: 500 });
+    if (templateResult.status !== 200) {
+      return NextResponse.json(templateResult.body || { message: 'Quiz template not found.' }, { status: templateResult.status });
     }
     
-    // Check user attempts using NestJS API
+    const template = templateResult.body?.data?.quiz;
+    
+    if (!template) {
+      return NextResponse.json({ message: 'Quiz template not found.' }, { status: 404 });
+    }
+    
+    if (template.status !== 'active') {
+      return NextResponse.json({ message: 'Quiz template is not active.' }, { status: 404 });
+    }
+    
+    // Fetch questions using forwardRequest
+    const questionsResult = await forwardRequest('/questions', request, { method: 'GET' });
+    
+    if (questionsResult.status !== 200) {
+      return NextResponse.json({ message: 'Failed to load questions.' }, { status: 500 });
+    }
+    
+    const questions = questionsResult.body?.data?.questions || [];
+    
+    // Check user attempts using forwardRequest
     let userAttemptsCount = 0;
-    try {
-      const attemptsRes = await fetch(`${API_URL}/attempts/template/${templateId}`, { headers });
-      if (attemptsRes.ok) {
-        const attemptsData = await attemptsRes.json();
-        const attempts = attemptsData?.data?.attempts || [];
-        userAttemptsCount = attempts.filter(a => a.status === 'completed').length;
-      }
-    } catch (error) {
-      console.error('Error fetching attempts:', error);
+    const attemptsResult = await forwardRequest(`/attempts/template/${templateId}`, request, { method: 'GET' });
+    
+    if (attemptsResult.status === 200) {
+      const attempts = attemptsResult.body?.data?.attempts || [];
+      userAttemptsCount = attempts.filter(a => a.status === 'completed').length;
     }
 
     // 2. Kiểm tra giới hạn số lần làm bài (maxAttempts)
-    console.log('User completed attempts:', userAttemptsCount, 'Max allowed:', template.maxAttempts);
 
     if (template.maxAttempts !== 0 && userAttemptsCount >= template.maxAttempts) {
       return NextResponse.json({ 
@@ -186,28 +183,29 @@ export async function GET(request, { params }) {
       return questionData;
     });
   
-    // 5. Ghi nhận Bài thi đang làm (`in_progress`)
-    const newAttemptId = Math.max(...userAttempts.map(a => a.id), 0) + 1;
-    const newAttempt = {
-        id: newAttemptId,
-        userId: userId,
-        templateId: templateId,
-        startTime: new Date().toISOString(),
-        status: 'in_progress',
-        totalQuestions: quizDataForClient.length,
-        attemptDetails: []
-    };
-    
-    // Lưu lại attempt (LƯU Ý: Đây là phương pháp đơn giản cho JSON CSDL)
-    // Trong môi trường thực tế, bạn sẽ ghi vào CSDL
-    userAttempts.push(newAttempt);
-    const dataDir = path.join(process.cwd(), 'app', 'data');
-    fs.writeFileSync(path.join(dataDir, 'userAttempts.json'), JSON.stringify(userAttempts, null, 2));
+    // 5. Tạo Attempt mới qua forwardRequest
+    const createAttemptResult = await forwardRequest('/attempts', request, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templateId: templateId })
+    });
 
+    if (createAttemptResult.status !== 201 && createAttemptResult.status !== 200) {
+      return NextResponse.json(
+        createAttemptResult.body || { message: 'Failed to create attempt.' },
+        { status: createAttemptResult.status }
+      );
+    }
+
+    const attemptId = createAttemptResult.body?.data?.attempt?.id;
+    
+    if (!attemptId) {
+      return NextResponse.json({ message: 'No attempt ID returned' }, { status: 500 });
+    }
 
     // 6. Trả về dữ liệu bài thi
     return NextResponse.json({
-        attemptId: newAttemptId,
+        attemptId: attemptId,
         quizTitle: template.name,
         duration: template.durationMinutes,
         questions: quizDataForClient
