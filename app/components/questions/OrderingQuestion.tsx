@@ -16,7 +16,7 @@ interface OrderingQuestionProps {
   correctOrder?: string[];
 }
 
-export default function OrderingQuestion({
+function OrderingQuestion({
   question,
   selectedOrder,
   onAnswerChange,
@@ -151,3 +151,5 @@ export default function OrderingQuestion({
     </div>
   );
 }
+
+export default React.memo(OrderingQuestion);

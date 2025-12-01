@@ -14,7 +14,7 @@ interface TrueFalseQuestionProps {
   isCorrect?: boolean;
 }
 
-export default function TrueFalseQuestion({
+function TrueFalseQuestion({
   question,
   selectedAnswer,
   onAnswerChange,
@@ -81,3 +81,5 @@ export default function TrueFalseQuestion({
     </div>
   );
 }
+
+export default React.memo(TrueFalseQuestion);

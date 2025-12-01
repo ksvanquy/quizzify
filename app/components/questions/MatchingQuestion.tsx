@@ -17,7 +17,7 @@ interface MatchingQuestionProps {
   correctMatches?: Record<string, string>;
 }
 
-export default function MatchingQuestion({
+function MatchingQuestion({
   question,
   selectedMatches,
   onAnswerChange,
@@ -190,3 +190,5 @@ export default function MatchingQuestion({
     </div>
   );
 }
+
+export default React.memo(MatchingQuestion);

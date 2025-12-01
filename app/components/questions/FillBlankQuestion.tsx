@@ -16,7 +16,7 @@ interface FillBlankQuestionProps {
   isCorrect?: boolean;
 }
 
-export default function FillBlankQuestion({
+function FillBlankQuestion({
   question,
   selectedAnswer,
   onAnswerChange,
@@ -92,3 +92,5 @@ export default function FillBlankQuestion({
     </div>
   );
 }
+
+export default React.memo(FillBlankQuestion);

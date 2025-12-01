@@ -2,7 +2,7 @@
 
 // app/quiz/[id]/page.js (Component chính)
 
-import { useEffect, useState, useCallback, useRef, memo, use } from 'react';
+import { useEffect, useState, useCallback, useRef, memo, use, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import QuestionRenderer from '@/app/components/QuestionRenderer';
@@ -12,6 +12,8 @@ export default function QuizPage({ params }) {
   // ✅ FIX #1: In Next.js 15+, params is a Promise - must unwrap with use()
   const unwrappedParams = use(params);
   const quizId = unwrappedParams?.id;
+  
+
   
   const { user, isBookmarked, addBookmark, removeBookmark, isInWatchlist, addToWatchlist, removeFromWatchlist } = useAuth();
   
@@ -26,23 +28,6 @@ export default function QuizPage({ params }) {
   const [quizStartTime, setQuizStartTime] = useState(null);
   const toastTimeoutRef = useRef(null);
   const submitAbortRef = useRef(null);
-
-  // ✅ FIX #3: Validate quizId trước khi fetch
-  // Check authentication before loading quiz
-  useEffect(() => {
-    if (!quizId) {
-      setError('Invalid quiz ID');
-      setLoading(false);
-      return;
-    }
-
-    // TODO: Uncomment to require login
-    // if (!user) {
-    //   setError('Bạn cần đăng nhập để làm bài thi.');
-    //   setLoading(false);
-    //   return;
-    // }
-  }, [quizId, user]);
 
   // ✅ FIX #7: Extract token fetch logic to separate effect
   const getAccessToken = useCallback(() => {
@@ -66,13 +51,36 @@ export default function QuizPage({ params }) {
     setUserAnswers((prev) => ({ ...prev, [questionId]: answer }));
   }, []);
 
+  // ✅ FIX #12: Memoize current question BEFORE any conditional rendering (all hooks before early returns)
+  // This prevents unnecessary re-renders in QuestionRenderer
+  const currentQuestion = useMemo(
+    () => quizData?.questions?.[currentQuestionIndex] || null,
+    [currentQuestionIndex, quizData?.questions?.length]
+  );
+
+
+  // ✅ FIX #13: Memoize the answer change handler - depends ONLY on handleAnswerChange
+  // Pass questionId explicitly to avoid currentQuestion?.id dependency
+  const handleCurrentQuestionAnswerChange = useCallback(
+    (answer) => {
+      if (currentQuestion?.id) {
+        handleAnswerChange(currentQuestion.id, answer);
+      }
+    },
+    [handleAnswerChange]  // Only depend on stable handleAnswerChange
+  );
+
+
   // All other callbacks will be defined conditionally using useMemo to avoid hook order issues
   // Store current question index in state to avoid dependency issues
   const handleSubmitCallback = useCallback(async () => {
     // ✅ FIX #5: Guard against multiple submits - check BEFORE any async operation
     if (isSubmitting) {
       console.warn('Submit already in progress');
-      showToastCallback('Bài thi đang được nộp, vui lòng đợi...', 'warning');
+      // Show warning directly without calling showToastCallback to avoid circular dependency
+      setToast({ message: 'Bài thi đang được nộp, vui lòng đợi...', type: 'warning' });
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
       return;
     }
 
@@ -174,7 +182,11 @@ export default function QuizPage({ params }) {
         return;
       }
       console.error('Error submitting quiz:', error);
-      showToastCallback(error.message || 'Lỗi khi nộp bài', 'error');
+      // Show error directly without calling showToastCallback
+      const errorMsg = error.message || 'Lỗi khi nộp bài';
+      setToast({ message: errorMsg, type: 'error' });
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
     } finally {
       setIsSubmitting(false);
       submitAbortRef.current = null;
@@ -210,7 +222,9 @@ export default function QuizPage({ params }) {
 
   const handleBookmarkToggleCallback = useCallback(async () => {
     if (!user) {
-      showToastCallback('Vui lòng đăng nhập', 'error');
+      setToast({ message: 'Vui lòng đăng nhập', type: 'error' });
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
       return;
     }
 
@@ -220,20 +234,26 @@ export default function QuizPage({ params }) {
 
       if (isBookmarked(qId)) {
         await removeBookmark(qId);
-        showToastCallback('Đã xóa khỏi bookmark', 'success');
+        setToast({ message: 'Đã xóa khỏi bookmark', type: 'success' });
       } else {
         await addBookmark(qId);
-        showToastCallback('Đã thêm vào bookmark', 'success');
+        setToast({ message: 'Đã thêm vào bookmark', type: 'success' });
       }
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
     } catch (error) {
       console.error('Error toggling bookmark:', error);
-      showToastCallback('Có lỗi xảy ra', 'error');
+      setToast({ message: 'Có lỗi xảy ra', type: 'error' });
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
     }
   }, [user, quizId, isBookmarked, removeBookmark, addBookmark]);
 
   const handleWatchlistToggleCallback = useCallback(async () => {
     if (!user) {
-      showToastCallback('Vui lòng đăng nhập', 'error');
+      setToast({ message: 'Vui lòng đăng nhập', type: 'error' });
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
       return;
     }
 
@@ -243,14 +263,18 @@ export default function QuizPage({ params }) {
 
       if (isInWatchlist(qId)) {
         await removeFromWatchlist(qId);
-        showToastCallback('Đã xóa khỏi watchlist', 'success');
+        setToast({ message: 'Đã xóa khỏi watchlist', type: 'success' });
       } else {
         await addToWatchlist(qId);
-        showToastCallback('Đã thêm vào watchlist', 'success');
+        setToast({ message: 'Đã thêm vào watchlist', type: 'success' });
       }
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
     } catch (error) {
       console.error('Error toggling watchlist:', error);
-      showToastCallback('Có lỗi xảy ra', 'error');
+      setToast({ message: 'Có lỗi xảy ra', type: 'error' });
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
     }
   }, [user, quizId, isInWatchlist, removeFromWatchlist, addToWatchlist]);
 
@@ -356,17 +380,15 @@ export default function QuizPage({ params }) {
     }
     
     fetchQuiz();
-  }, [quizId, getAccessToken]);
+  }, [quizId]);
 
-  // ✅ FIX #5: Proper timer with guards
+  // ✅ FIX #5: Proper timer with guards - extract to separate effect
   useEffect(() => {
-    if (timeRemaining <= 0 || !quizData || isSubmitting) return;
+    if (!quizData || isSubmitting) return;
 
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
-          // Auto-submit but with guard
-          handleSubmit();
           return 0;
         }
         return prev - 1;
@@ -374,7 +396,7 @@ export default function QuizPage({ params }) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeRemaining, quizData, isSubmitting]);
+  }, [!!quizData, isSubmitting]);
 
   // ✅ FIX #6: Return early if data not ready
   if (error) {
@@ -413,7 +435,6 @@ export default function QuizPage({ params }) {
   }
 
   // Get current question and answer (after validation checks)
-  const currentQuestion = quizData.questions[currentQuestionIndex];
   const currentAnswer = userAnswers[currentQuestion?.id] || null;
 
   return (
@@ -470,7 +491,7 @@ export default function QuizPage({ params }) {
           <MemoizedQuestionRenderer
             question={currentQuestion}
             userAnswer={currentAnswer}
-            onAnswerChange={(answer) => handleAnswerChange(currentQuestion.id, answer)}
+            onAnswerChange={handleCurrentQuestionAnswerChange}
             showExplanation={false}
             correctAnswer={null}
           />

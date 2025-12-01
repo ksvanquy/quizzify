@@ -2,7 +2,7 @@
 
 // app/components/questions/NumericInputQuestion.tsx
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 interface NumericInputQuestionProps {
   question: any;
@@ -12,7 +12,7 @@ interface NumericInputQuestionProps {
   isCorrect?: boolean;
 }
 
-export default function NumericInputQuestion({
+function NumericInputQuestion({
   question,
   selectedAnswer,
   onAnswerChange,
@@ -93,3 +93,5 @@ export default function NumericInputQuestion({
     </div>
   );
 }
+
+export default React.memo(NumericInputQuestion);

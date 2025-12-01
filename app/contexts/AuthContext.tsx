@@ -2,7 +2,7 @@
 
 // app/contexts/AuthContext.tsx
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import * as authApi from '../lib/auth';
 import { API_URL } from '../lib/api';
 
@@ -362,7 +362,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{
+    <AuthContext.Provider value={useMemo(() => ({
       user,
       loading,
       login,
@@ -375,7 +375,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       removeFromWatchlist,
       isBookmarked,
       isInWatchlist
-    }}>
+    }), [user, login, register, logout, updateProfile, addBookmark, removeBookmark, addToWatchlist, removeFromWatchlist, isBookmarked, isInWatchlist])}>
       {children}
     </AuthContext.Provider>
   );

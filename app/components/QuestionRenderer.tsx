@@ -1,7 +1,7 @@
 // app/components/QuestionRenderer.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import TrueFalseQuestion from './questions/TrueFalseQuestion';
 import OrderingQuestion from './questions/OrderingQuestion';
 import MatchingQuestion from './questions/MatchingQuestion';
@@ -30,13 +30,15 @@ interface QuestionRendererProps {
   correctAnswer?: any;
 }
 
-export default function QuestionRenderer({
+function QuestionRenderer({
   question,
   userAnswer,
   onAnswerChange,
   showExplanation = false,
   correctAnswer
 }: QuestionRendererProps) {
+
+
   // State for fetched question details
   const [options, setOptions] = useState<OptionDto[]>([]);
   const [ordering, setOrdering] = useState<OrderingDto | null>(null);
@@ -45,13 +47,24 @@ export default function QuestionRenderer({
   const [numericInput, setNumericInput] = useState<NumericInputDto | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
+  // ✅ Track fetched question to prevent re-fetching same question
+  const fetchedQuestionIdRef = useRef<string | null>(null);
+
   const questionType = question.type;
 
-  // Fetch question-specific details on mount or when question changes
+  // Fetch question-specific details on mount or when question.id changes
+  // ✅ IMPORTANT: Skip fetch if we already fetched this question ID
   useEffect(() => {
-    const fetchDetails = async () => {
-      if (!question?.id) return;
+    const questionIdStr = String(question?.id);
+    
+    // Skip if already fetched this question ID
+    if (fetchedQuestionIdRef.current === questionIdStr) return;
+    if (!question?.id) return;
+    
+    // ✅ SET REF IMMEDIATELY to prevent re-trigger on state updates
+    fetchedQuestionIdRef.current = questionIdStr;
 
+    const fetchDetails = async () => {
       setIsLoadingDetails(true);
 
       try {
@@ -369,3 +382,6 @@ export default function QuestionRenderer({
     </div>
   );
 }
+
+// ✅ Export memoized version to prevent unnecessary re-renders when parent component updates
+export default React.memo(QuestionRenderer);

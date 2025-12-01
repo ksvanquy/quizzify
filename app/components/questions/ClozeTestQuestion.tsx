@@ -2,7 +2,7 @@
 
 // app/components/questions/ClozeTestQuestion.tsx
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 interface ClozeTestQuestionProps {
   question: any;
@@ -12,7 +12,7 @@ interface ClozeTestQuestionProps {
   correctAnswers?: Record<string, string[]>;
 }
 
-export default function ClozeTestQuestion({
+function ClozeTestQuestion({
   question,
   selectedAnswer,
   onAnswerChange,
@@ -154,3 +154,5 @@ export default function ClozeTestQuestion({
     </div>
   );
 }
+
+export default React.memo(ClozeTestQuestion);

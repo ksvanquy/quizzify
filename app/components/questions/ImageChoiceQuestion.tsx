@@ -2,7 +2,7 @@
 
 // app/components/questions/ImageChoiceQuestion.tsx
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 interface ImageChoiceQuestionProps {
   question: any;
@@ -12,7 +12,7 @@ interface ImageChoiceQuestionProps {
   correctAnswer?: number | number[];
 }
 
-export default function ImageChoiceQuestion({
+function ImageChoiceQuestion({
   question,
   selectedAnswer,
   onAnswerChange,
@@ -134,3 +134,5 @@ export default function ImageChoiceQuestion({
     </div>
   );
 }
+
+export default React.memo(ImageChoiceQuestion);
