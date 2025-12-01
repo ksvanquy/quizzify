@@ -23,6 +23,7 @@ export default function QuizPage({ params }) {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [toast, setToast] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quizStartTime, setQuizStartTime] = useState(null);
   const toastTimeoutRef = useRef(null);
   const submitAbortRef = useRef(null);
 
@@ -68,9 +69,10 @@ export default function QuizPage({ params }) {
   // All other callbacks will be defined conditionally using useMemo to avoid hook order issues
   // Store current question index in state to avoid dependency issues
   const handleSubmitCallback = useCallback(async () => {
-    // ✅ FIX #5: Guard against multiple submits
+    // ✅ FIX #5: Guard against multiple submits - check BEFORE any async operation
     if (isSubmitting) {
       console.warn('Submit already in progress');
+      showToastCallback('Bài thi đang được nộp, vui lòng đợi...', 'warning');
       return;
     }
 
@@ -98,14 +100,36 @@ export default function QuizPage({ params }) {
         'Authorization': `Bearer ${accessToken}`
       };
 
-      const response = await fetch('/api/quiz/submit', {
+      // Create AbortController for this request
+      const abortController = new AbortController();
+      submitAbortRef.current = abortController;
+
+      // Prepare request body - normalize question IDs to strings
+      const normalizedAnswers = Object.entries(userAnswers).reduce((acc, [key, value]) => {
+        acc[String(key)] = value;
+        return acc;
+      }, {});
+
+      const requestBody = {
+        userAnswers: normalizedAnswers,
+        timeSpentSeconds: Math.floor((new Date() - quizStartTime) / 1000)
+      };
+      
+      console.log('Submitting attempt:', {
+        attemptId: quizData.attemptId,
+        userAnswers: normalizedAnswers,
+        timeSpentSeconds: requestBody.timeSpentSeconds,
+        requestBody: JSON.stringify(requestBody)
+      });
+
+      // Call backend NestJS API
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/attempts/${quizData.attemptId}/submit`, {
         method: 'POST',
         headers,
         credentials: 'include',
-        body: JSON.stringify({
-          attemptId: quizData.attemptId,
-          answers: userAnswers
-        })
+        signal: abortController.signal,
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -114,20 +138,48 @@ export default function QuizPage({ params }) {
       }
 
       const result = await response.json();
+      console.log('Submit response:', result);
       
-      // ✅ FIX #15: Validate response structure
-      if (!result?.attemptId && !result?.data?.attemptId) {
-        throw new Error('Invalid response from server');
+      // ✅ FIX #15: Validate response structure - handle multiple formats from backend
+      let resultId = null;
+      
+      // NestJS backend format: { success: true, data: { attempt: { id, ... } } }
+      if (result?.data?.attempt?.id) {
+        resultId = result.data.attempt.id;
+      } else if (result?.data?.attempt?._id) {
+        resultId = result.data.attempt._id;
+      } else if (result?.data?.id) {
+        resultId = result.data.id;
+      } else if (result?.data?._id) {
+        resultId = result.data._id;
+      } else if (result?.id) {
+        resultId = result.id;
+      } else if (result?._id) {
+        resultId = result._id;
+      } else if (result?.attemptId) {
+        resultId = result.attemptId;
+      } else if (result?.data?.attemptId) {
+        resultId = result.data.attemptId;
+      }
+      
+      if (!resultId) {
+        console.warn('Response structure:', JSON.stringify(result, null, 2));
+        throw new Error('Invalid response from server - no attempt ID found');
       }
 
-      const resultId = result.attemptId || result.data.attemptId;
       router.push(`/result/${resultId}`);
     } catch (error) {
+      if (error.name === 'AbortError') {
+        console.log('Submit request was cancelled');
+        return;
+      }
       console.error('Error submitting quiz:', error);
+      showToastCallback(error.message || 'Lỗi khi nộp bài', 'error');
     } finally {
       setIsSubmitting(false);
+      submitAbortRef.current = null;
     }
-  }, [quizData, userAnswers, getAccessToken, isSubmitting, router]);
+  }, [quizData, userAnswers, getAccessToken, isSubmitting, router, quizStartTime]);
 
   const goToPrevQuestionCallback = useCallback(() => {
     setCurrentQuestionIndex((prev) => Math.max(0, prev - 1));
@@ -177,7 +229,7 @@ export default function QuizPage({ params }) {
       console.error('Error toggling bookmark:', error);
       showToastCallback('Có lỗi xảy ra', 'error');
     }
-  }, [user, quizId, isBookmarked, removeBookmark, addBookmark, showToastCallback]);
+  }, [user, quizId, isBookmarked, removeBookmark, addBookmark]);
 
   const handleWatchlistToggleCallback = useCallback(async () => {
     if (!user) {
@@ -200,7 +252,7 @@ export default function QuizPage({ params }) {
       console.error('Error toggling watchlist:', error);
       showToastCallback('Có lỗi xảy ra', 'error');
     }
-  }, [user, quizId, isInWatchlist, removeFromWatchlist, addToWatchlist, showToastCallback]);
+  }, [user, quizId, isInWatchlist, removeFromWatchlist, addToWatchlist]);
 
   // ✅ CRITICAL: All effects MUST be before early returns (React Rules of Hooks)
   // ✅ Cleanup on unmount
@@ -292,6 +344,7 @@ export default function QuizPage({ params }) {
         }
         
         setQuizData(data);
+        setQuizStartTime(new Date());
         setTimeRemaining(data.duration ? data.duration * 60 : 0);
         setLoading(false);
       } catch (err) {
@@ -470,9 +523,14 @@ export default function QuizPage({ params }) {
             
             <button
               onClick={handleSubmitCallback}
-              className="mt-6 w-full bg-red-600 text-white py-3 rounded hover:bg-red-700 font-bold"
+              disabled={isSubmitting}
+              className={`mt-6 w-full py-3 rounded font-bold text-white transition ${
+                isSubmitting
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-red-600 hover:bg-red-700'
+              }`}
             >
-              NỘP BÀI
+              {isSubmitting ? '⏳ Đang nộp bài...' : 'NỘP BÀI'}
             </button>
           </div>
         </div>
@@ -481,12 +539,16 @@ export default function QuizPage({ params }) {
       {/* Toast Notification */}
       {toast && (
         <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 animate-slide-up ${
-          toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          toast.type === 'success' ? 'bg-green-500' : toast.type === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
         }`}>
           <div className="flex items-center gap-2">
             {toast.type === 'success' ? (
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            ) : toast.type === 'warning' ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
             ) : (
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

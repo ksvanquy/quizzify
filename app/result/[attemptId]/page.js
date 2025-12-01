@@ -10,20 +10,56 @@ export default function ResultPage({ params }) {
   const unwrappedParams = use(params);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     async function fetchResult() {
       try {
-        const response = await fetch(`/api/results/${unwrappedParams.attemptId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch result');
+        setLoading(true);
+        setError(null);
+
+        // Get access token
+        const accessToken = typeof window !== 'undefined' 
+          ? localStorage.getItem('accessToken')
+          : null;
+
+        if (!accessToken) {
+          throw new Error('Session expired. Please login again.');
         }
+
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        };
+
+        // Call backend NestJS API directly
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${apiUrl}/attempts/${unwrappedParams.attemptId}`, {
+          method: 'GET',
+          headers,
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: 'Failed to fetch result' }));
+          throw new Error(errorData.message || `HTTP ${response.status}`);
+        }
+
         const data = await response.json();
-        setResult(data);
+        console.log('Result data:', data);
+
+        // Handle response structure: { success: true, data: { attempt: {...} } }
+        const attemptData = data?.data?.attempt || data?.data || data;
+        
+        if (!attemptData) {
+          throw new Error('Invalid response structure');
+        }
+
+        setResult(attemptData);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching result:', error);
-        alert('Không thể tải kết quả. Vui lòng thử lại.');
+        setError(error.message || 'Không thể tải kết quả. Vui lòng thử lại.');
         setLoading(false);
       }
     }
@@ -34,6 +70,19 @@ export default function ResultPage({ params }) {
     return (
       <div className="container mx-auto p-4 text-center">
         <p className="text-xl">Đang tải kết quả...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-4 text-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <p className="text-xl text-red-600 mb-4">Lỗi: {error}</p>
+          <Link href="/" className="inline-block bg-indigo-600 text-white px-6 py-3 rounded hover:bg-indigo-700">
+            Quay về Trang Chủ
+          </Link>
+        </div>
       </div>
     );
   }
