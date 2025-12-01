@@ -66,20 +66,31 @@ export async function GET(request, { params }) {
   try {
     const { templateId } = await params;
     
+    console.log(`\n🎯 GET /api/quizzes/${templateId} - Starting`);
+    
     // Fetch quiz template using forwardRequest
     const templateResult = await forwardRequest(`/quizzes/${templateId}`, request, { method: 'GET' });
     
     if (templateResult.status !== 200) {
+      console.error(`❌ Failed to fetch template: status=${templateResult.status}`);
       return NextResponse.json(templateResult.body || { message: 'Quiz template not found.' }, { status: templateResult.status });
     }
     
     const template = templateResult.body?.data?.quiz;
     
     if (!template) {
+      console.error('❌ Template not found in response');
+      console.error('Response structure:', JSON.stringify(templateResult.body, null, 2));
       return NextResponse.json({ message: 'Quiz template not found.' }, { status: 404 });
     }
     
+    console.log(`✅ Template loaded: ${template.name}`);
+    console.log(`   ID: ${template.id}`);
+    console.log(`   Status: ${template.status}`);
+    console.log(`   Question mode: ${template.questionSelection?.mode}`);
+    
     if (template.status !== 'active') {
+      console.error('❌ Template is not active');
       return NextResponse.json({ message: 'Quiz template is not active.' }, { status: 404 });
     }
     
@@ -87,12 +98,23 @@ export async function GET(request, { params }) {
     const questionsResult = await forwardRequest('/questions', request, { method: 'GET' });
     
     if (questionsResult.status !== 200) {
+      console.error(`❌ Failed to fetch questions: status=${questionsResult.status}`);
       return NextResponse.json({ message: 'Failed to load questions.' }, { status: 500 });
     }
     
-    const questions = questionsResult.body?.data?.questions || [];
+    console.log('🔍 questionsResult.body structure:', JSON.stringify(questionsResult.body, null, 2).substring(0, 500));
     
-    console.log(`📊 Loaded ${questions.length} questions from NestJS`);
+    // Handle both: data.questions (array) or data being array directly
+    let questions = [];
+    if (questionsResult.body?.data?.questions) {
+      questions = questionsResult.body.data.questions;
+    } else if (Array.isArray(questionsResult.body?.data)) {
+      questions = questionsResult.body.data;
+    } else if (Array.isArray(questionsResult.body)) {
+      questions = questionsResult.body;
+    }
+    
+    console.log(`✅ Loaded ${questions.length} questions from NestJS`);
     if (questions.length > 0) {
       console.log('📄 Sample question structure:', JSON.stringify(questions[0], null, 2));
     }
@@ -119,31 +141,53 @@ export async function GET(request, { params }) {
     let selectedQuestions = [];
 
     if (template.questionSelection.mode === 'manual' && template.questionSelection.manualQuestionIds) {
-      // Hỗ trợ MongoDB ObjectId (string)
+      // Manual selection: match template's manualQuestionIds với questions IDs
       const manualIds = template.questionSelection.manualQuestionIds.map(id => String(id));
-      console.log('🔍 Looking for manualQuestionIds:', manualIds);
-      console.log('🔍 Available question IDs:', questions.map(q => String(q.id || q._id)));
+      
+      console.log('📋 Manual Question Selection:');
+      console.log(`   Required IDs: ${manualIds.length}`);
       
       selectedQuestions = questions.filter(q => {
         const qId = String(q.id || q._id);
         return manualIds.includes(qId);
       });
+      
+      console.log(`   ✅ Matched: ${selectedQuestions.length}/${manualIds.length} questions`);
+      
+      // Check for missing questions
+      const foundIds = new Set(selectedQuestions.map(q => String(q.id || q._id)));
+      const missingIds = manualIds.filter(id => !foundIds.has(id));
+      if (missingIds.length > 0) {
+        console.warn(`   ⚠️ Missing questions: ${missingIds.join(', ')}`);
+      }
     } else if (template.questionSelection.mode === 'random') {
-      // Lọc theo chủ đề
+      // Random selection: filter by topics then pick by difficulty
+      console.log('🎲 Random Question Selection:');
+      console.log(`   sourceTopics: ${template.questionSelection.sourceTopics?.join(', ')}`);
+      
       const filteredQuestions = questions.filter(q => 
-        template.questionSelection.sourceTopics.includes(q.topic)
+        template.questionSelection.sourceTopics?.includes(q.topic)
       );
+      
+      console.log(`   Filtered questions: ${filteredQuestions.length} / ${questions.length}`);
       
       // Chọn ngẫu nhiên theo độ khó
       const counts = template.questionSelection.randomCounts;
+      const availableByDifficulty = {};
       
       for (const [difficulty, count] of Object.entries(counts)) {
-        const questionsByDifficulty = filteredQuestions
-          .filter(q => q.difficulty === difficulty);
-          
-        const shuffled = shuffleArray([...questionsByDifficulty]); // Sao chép và xáo trộn
-        selectedQuestions.push(...shuffled.slice(0, count));
+        const questionsByDifficulty = filteredQuestions.filter(q => q.difficulty === difficulty);
+        const available = questionsByDifficulty.length;
+        const toSelect = Math.min(count, available);
+        
+        availableByDifficulty[difficulty] = `${toSelect}/${available}`;
+        
+        const shuffled = shuffleArray([...questionsByDifficulty]);
+        selectedQuestions.push(...shuffled.slice(0, toSelect));
       }
+      
+      console.log('   By difficulty:', availableByDifficulty);
+      console.log(`   Total selected: ${selectedQuestions.length}`);
       
       // Xáo trộn lần cuối để trộn các độ khó lại với nhau
       shuffleArray(selectedQuestions);
@@ -153,10 +197,14 @@ export async function GET(request, { params }) {
     
     if (selectedQuestions.length === 0) {
       console.error('❌ No questions selected!');
+      console.error('Template ID:', templateId);
       console.error('Template:', JSON.stringify(template.questionSelection, null, 2));
-      console.error('Available questions:', questions.length);
+      console.error('Available questions count:', questions.length);
+      if (questions.length > 0) {
+        console.error('First question structure:', JSON.stringify(questions[0], null, 2));
+      }
       return NextResponse.json({ 
-        message: 'No questions found in quiz. Please configure quiz questions in admin panel.' 
+        message: `No questions selected. Template mode: ${template.questionSelection.mode}, Available questions: ${questions.length}`
       }, { status: 500 });
     }
 

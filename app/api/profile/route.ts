@@ -44,18 +44,25 @@ async function forwardRequest(path: string, req: Request, init: RequestInit = {}
 
 export async function GET(request: Request) {
   try {
+    // Require Authorization Bearer token
+    const auth = request.headers.get('authorization');
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { success: false, message: 'Missing or invalid Authorization header. Use: Authorization: Bearer <token>' },
+        { status: 401 }
+      );
+    }
+
     const result = await forwardRequest('/auth/profile', request, { method: 'GET' });
     
     if (result.status === 200) {
       // Enrich user data with bookmarked and watchlisted quizzes
       const userData = result.body?.data?.user || result.body?.user || result.body;
       
-      // Fetch bookmarks and watchlist from NestJS
-      const auth = request.headers.get('authorization');
-      const cookie = request.headers.get('cookie');
-      const headers: Record<string, string> = {};
-      if (auth) headers['Authorization'] = auth;
-      if (cookie) headers['cookie'] = cookie;
+      // Fetch bookmarks and watchlist from NestJS - use Bearer token only
+      const headers: Record<string, string> = {
+        'Authorization': auth
+      };
       
       const [bookmarksRes, watchlistRes] = await Promise.all([
         fetch(`${API_URL}/bookmarks`, { headers }),
@@ -117,6 +124,15 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    // Require Authorization Bearer token
+    const auth = request.headers.get('authorization');
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { success: false, message: 'Missing or invalid Authorization header. Use: Authorization: Bearer <token>' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.text();
     const opts: RequestInit = {
       method: 'PUT',

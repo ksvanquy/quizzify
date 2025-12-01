@@ -28,6 +28,15 @@ async function forwardRequest(path: string, req: Request, init: RequestInit = {}
 // GET /api/bookmarks - Lấy tất cả bookmarks của user
 export async function GET(request: Request) {
   try {
+    // Require Authorization Bearer token
+    const auth = request.headers.get('authorization');
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { success: false, message: 'Missing or invalid Authorization header. Use: Authorization: Bearer <token>' },
+        { status: 401 }
+      );
+    }
+
     const result = await forwardRequest('/bookmarks', request, { method: 'GET' });
     return NextResponse.json(result.body, { status: result.status });
   } catch (err: any) {
@@ -39,6 +48,15 @@ export async function GET(request: Request) {
 // POST /api/bookmarks - Thêm bookmark mới
 export async function POST(request: Request) {
   try {
+    // Require Authorization Bearer token
+    const auth = request.headers.get('authorization');
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { success: false, message: 'Missing or invalid Authorization header. Use: Authorization: Bearer <token>' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.text();
     const opts: RequestInit = {
       method: 'POST',
@@ -59,6 +77,15 @@ export async function POST(request: Request) {
 // DELETE /api/bookmarks?quizId=... - Xóa bookmark theo quizId
 export async function DELETE(request: Request) {
   try {
+    // Require Authorization Bearer token
+    const auth = request.headers.get('authorization');
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { success: false, message: 'Missing or invalid Authorization header. Use: Authorization: Bearer <token>' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const quizId = searchParams.get('quizId');
 
