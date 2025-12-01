@@ -49,9 +49,192 @@ export default function QuizPage({ params }) {
     return localStorage.getItem('accessToken');
   }, []);
 
+  // ✅ FIX #10: Add answer validation helper (must be before early returns)
+  const isAnswerEmpty = useCallback((answer) => {
+    if (answer === null || answer === undefined) return true;
+    if (Array.isArray(answer)) return answer.length === 0;
+    if (typeof answer === 'string') return answer.trim() === '';
+    return false;
+  }, []);
+
+  // ✅ FIX #11: Memoized QuestionRenderer for performance (must be before early returns)
+  const MemoizedQuestionRenderer = memo(QuestionRenderer);
+
+  // ✅ All callbacks must be defined before early returns and effects (React Rules of Hooks)
+  const handleAnswerChange = useCallback((questionId, answer) => {
+    setUserAnswers((prev) => ({ ...prev, [questionId]: answer }));
+  }, []);
+
+  // All other callbacks will be defined conditionally using useMemo to avoid hook order issues
+  // Store current question index in state to avoid dependency issues
+  const handleSubmitCallback = useCallback(async () => {
+    // ✅ FIX #5: Guard against multiple submits
+    if (isSubmitting) {
+      console.warn('Submit already in progress');
+      return;
+    }
+
+    // ✅ FIX #4: Replace confirm() with better UX
+    const shouldSubmit = typeof window !== 'undefined' && 
+      window.confirm('Bạn có chắc chắn muốn nộp bài?');
+    
+    if (!shouldSubmit) return;
+
+    setIsSubmitting(true);
+
+    try {
+      // ✅ FIX #15: Validate attemptId exists
+      if (!quizData?.attemptId) {
+        throw new Error('Invalid quiz attempt');
+      }
+
+      const accessToken = getAccessToken();
+      if (!accessToken) {
+        throw new Error('Session expired. Please login again.');
+      }
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      };
+
+      const response = await fetch('/api/quiz/submit', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({
+          attemptId: quizData.attemptId,
+          answers: userAnswers
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to submit' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // ✅ FIX #15: Validate response structure
+      if (!result?.attemptId && !result?.data?.attemptId) {
+        throw new Error('Invalid response from server');
+      }
+
+      const resultId = result.attemptId || result.data.attemptId;
+      router.push(`/result/${resultId}`);
+    } catch (error) {
+      console.error('Error submitting quiz:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [quizData, userAnswers, getAccessToken, isSubmitting, router]);
+
+  const goToPrevQuestionCallback = useCallback(() => {
+    setCurrentQuestionIndex((prev) => Math.max(0, prev - 1));
+  }, []);
+
+  const goToNextQuestionCallback = useCallback((totalQuestions) => {
+    setCurrentQuestionIndex((prev) => Math.min(totalQuestions - 1, prev + 1));
+  }, []);
+
+  const formatTimeCallback = useCallback((seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }, []);
+
+  const showToastCallback = useCallback((message, type = 'success') => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    
+    setToast({ message, type });
+    
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimeoutRef.current = null;
+    }, 3000);
+  }, []);
+
+  const handleBookmarkToggleCallback = useCallback(async () => {
+    if (!user) {
+      showToastCallback('Vui lòng đăng nhập', 'error');
+      return;
+    }
+
+    try {
+      const qId = quizId ? String(quizId) : null;
+      if (!qId) throw new Error('Invalid quiz ID');
+
+      if (isBookmarked(qId)) {
+        await removeBookmark(qId);
+        showToastCallback('Đã xóa khỏi bookmark', 'success');
+      } else {
+        await addBookmark(qId);
+        showToastCallback('Đã thêm vào bookmark', 'success');
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      showToastCallback('Có lỗi xảy ra', 'error');
+    }
+  }, [user, quizId, isBookmarked, removeBookmark, addBookmark, showToastCallback]);
+
+  const handleWatchlistToggleCallback = useCallback(async () => {
+    if (!user) {
+      showToastCallback('Vui lòng đăng nhập', 'error');
+      return;
+    }
+
+    try {
+      const qId = quizId ? String(quizId) : null;
+      if (!qId) throw new Error('Invalid quiz ID');
+
+      if (isInWatchlist(qId)) {
+        await removeFromWatchlist(qId);
+        showToastCallback('Đã xóa khỏi watchlist', 'success');
+      } else {
+        await addToWatchlist(qId);
+        showToastCallback('Đã thêm vào watchlist', 'success');
+      }
+    } catch (error) {
+      console.error('Error toggling watchlist:', error);
+      showToastCallback('Có lỗi xảy ra', 'error');
+    }
+  }, [user, quizId, isInWatchlist, removeFromWatchlist, addToWatchlist, showToastCallback]);
+
+  // ✅ CRITICAL: All effects MUST be before early returns (React Rules of Hooks)
+  // ✅ Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+      if (submitAbortRef.current) {
+        submitAbortRef.current.abort();
+      }
+    };
+  }, []);
+
+  // ✅ FIX #3: Validate quizId trước khi fetch
+  // Check authentication before loading quiz
+  useEffect(() => {
+    if (!quizId) {
+      setError('Invalid quiz ID');
+      setLoading(false);
+      return;
+    }
+
+    // TODO: Uncomment to require login
+    // if (!user) {
+    //   setError('Bạn cần đăng nhập để làm bài thi.');
+    //   setLoading(false);
+    //   return;
+    // }
+  }, [quizId, user]);
+
   // Lấy dữ liệu bài thi từ API
   useEffect(() => {
-    if (!user || !quizId || error) return; // Don't fetch if not authenticated or invalid
+    if (!quizId) return; // Don't fetch if invalid
 
     async function fetchQuiz() {
       try {
@@ -120,7 +303,7 @@ export default function QuizPage({ params }) {
     }
     
     fetchQuiz();
-  }, [quizId, user, error, getAccessToken]);
+  }, [quizId, getAccessToken]);
 
   // ✅ FIX #5: Proper timer with guards
   useEffect(() => {
@@ -176,180 +359,9 @@ export default function QuizPage({ params }) {
     );
   }
 
-  // ✅ FIX #10: Add answer validation helper
-  const isAnswerEmpty = useCallback((answer) => {
-    if (answer === null || answer === undefined) return true;
-    if (Array.isArray(answer)) return answer.length === 0;
-    if (typeof answer === 'string') return answer.trim() === '';
-    return false;
-  }, []);
-
-  // ✅ FIX #11: Memoized QuestionRenderer for performance
-  const MemoizedQuestionRenderer = memo(QuestionRenderer);
-
-  // Get current question and answer
+  // Get current question and answer (after validation checks)
   const currentQuestion = quizData.questions[currentQuestionIndex];
   const currentAnswer = userAnswers[currentQuestion?.id] || null;
-
-  const handleAnswerChange = useCallback((questionId, answer) => {
-    setUserAnswers((prev) => ({ ...prev, [questionId]: answer }));
-  }, []);
-
-  // ✅ FIX #14: Submit with Authorization header
-  const handleSubmit = useCallback(async () => {
-    // ✅ FIX #5: Guard against multiple submits
-    if (isSubmitting) {
-      console.warn('Submit already in progress');
-      return;
-    }
-
-    // ✅ FIX #4: Replace confirm() with better UX
-    // In real app, use modal instead of confirm()
-    const shouldSubmit = typeof window !== 'undefined' && 
-      window.confirm('Bạn có chắc chắn muốn nộp bài?');
-    
-    if (!shouldSubmit) return;
-
-    setIsSubmitting(true);
-
-    try {
-      // ✅ FIX #15: Validate attemptId exists
-      if (!quizData?.attemptId) {
-        throw new Error('Invalid quiz attempt');
-      }
-
-      const accessToken = getAccessToken();
-      if (!accessToken) {
-        throw new Error('Session expired. Please login again.');
-      }
-
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
-      };
-
-      const response = await fetch('/api/quiz/submit', {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({
-          attemptId: quizData.attemptId,
-          answers: userAnswers
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to submit' }));
-        throw new Error(errorData.message || `HTTP ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      // ✅ FIX #15: Validate response structure
-      if (!result?.attemptId && !result?.data?.attemptId) {
-        throw new Error('Invalid response from server');
-      }
-
-      const resultId = result.attemptId || result.data.attemptId;
-      router.push(`/result/${resultId}`);
-    } catch (error) {
-      console.error('Error submitting quiz:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      showToast(errorMsg, 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [quizData, userAnswers, getAccessToken, isSubmitting, router]);
-
-  const goToPrevQuestion = useCallback(() => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-    }
-  }, [currentQuestionIndex]);
-
-  const goToNextQuestion = useCallback(() => {
-    if (quizData && currentQuestionIndex < quizData.questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    }
-  }, [currentQuestionIndex, quizData]);
-
-  const formatTime = useCallback((seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  }, []);
-
-  // ✅ FIX #12: Cleanup toast timeout on unmount
-  const showToast = useCallback((message, type = 'success') => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
-    }
-    
-    setToast({ message, type });
-    
-    toastTimeoutRef.current = setTimeout(() => {
-      setToast(null);
-      toastTimeoutRef.current = null;
-    }, 3000);
-  }, []);
-
-  // ✅ Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (toastTimeoutRef.current) {
-        clearTimeout(toastTimeoutRef.current);
-      }
-      if (submitAbortRef.current) {
-        submitAbortRef.current.abort();
-      }
-    };
-  }, []);
-
-  const handleBookmarkToggle = useCallback(async () => {
-    if (!user) {
-      showToast('Vui lòng đăng nhập', 'error');
-      return;
-    }
-
-    try {
-      const qId = quizId ? String(quizId) : null;
-      if (!qId) throw new Error('Invalid quiz ID');
-
-      if (isBookmarked(qId)) {
-        await removeBookmark(qId);
-        showToast('Đã xóa khỏi bookmark', 'success');
-      } else {
-        await addBookmark(qId);
-        showToast('Đã thêm vào bookmark', 'success');
-      }
-    } catch (error) {
-      console.error('Error toggling bookmark:', error);
-      showToast('Có lỗi xảy ra', 'error');
-    }
-  }, [user, quizId, isBookmarked, removeBookmark, addBookmark, showToast]);
-
-  const handleWatchlistToggle = useCallback(async () => {
-    if (!user) {
-      showToast('Vui lòng đăng nhập', 'error');
-      return;
-    }
-
-    try {
-      const qId = quizId ? String(quizId) : null;
-      if (!qId) throw new Error('Invalid quiz ID');
-
-      if (isInWatchlist(qId)) {
-        await removeFromWatchlist(qId);
-        showToast('Đã xóa khỏi watchlist', 'success');
-      } else {
-        await addToWatchlist(qId);
-        showToast('Đã thêm vào watchlist', 'success');
-      }
-    } catch (error) {
-      console.error('Error toggling watchlist:', error);
-      showToast('Có lỗi xảy ra', 'error');
-    }
-  }, [user, quizId, isInWatchlist, removeFromWatchlist, addToWatchlist, showToast]);
 
   return (
     <div className="container mx-auto p-4 max-w-6xl">
@@ -361,7 +373,7 @@ export default function QuizPage({ params }) {
           {user && (
             <div className="flex gap-2">
               <button
-                onClick={handleBookmarkToggle}
+                onClick={handleBookmarkToggleCallback}
                 className="p-2 rounded-lg bg-white hover:bg-gray-50 transition border border-gray-200"
                 title={isBookmarked(quizId) ? 'Xóa bookmark' : 'Thêm bookmark'}
               >
@@ -376,7 +388,7 @@ export default function QuizPage({ params }) {
                 )}
               </button>
               <button
-                onClick={handleWatchlistToggle}
+                onClick={handleWatchlistToggleCallback}
                 className="p-2 rounded-lg bg-white hover:bg-gray-50 transition border border-gray-200"
                 title={isInWatchlist(quizId) ? 'Xóa khỏi watchlist' : 'Thêm vào watchlist'}
               >
@@ -395,7 +407,7 @@ export default function QuizPage({ params }) {
         </div>
         
         <div className={`font-mono text-lg px-4 py-1 rounded-full shadow-lg ${timeRemaining < 300 ? 'bg-red-500' : 'bg-green-500'} text-white`}>
-          ⏰ {formatTime(timeRemaining)}
+          ⏰ {formatTimeCallback(timeRemaining)}
         </div>
       </header>
 
@@ -412,14 +424,14 @@ export default function QuizPage({ params }) {
           
           <footer className="mt-8 flex justify-between pt-4 border-t">
             <button
-              onClick={goToPrevQuestion}
+              onClick={goToPrevQuestionCallback}
               disabled={currentQuestionIndex === 0}
               className={`px-4 py-2 rounded ${currentQuestionIndex === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-300 text-gray-800 hover:bg-gray-400'}`}
             >
               ← Câu Trước
             </button>
             <button
-              onClick={goToNextQuestion}
+              onClick={() => goToNextQuestionCallback(quizData.questions.length)}
               disabled={currentQuestionIndex === quizData.questions.length - 1}
               className={`px-4 py-2 rounded ${currentQuestionIndex === quizData.questions.length - 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
             >
@@ -457,7 +469,7 @@ export default function QuizPage({ params }) {
             </div>
             
             <button
-              onClick={handleSubmit}
+              onClick={handleSubmitCallback}
               className="mt-6 w-full bg-red-600 text-white py-3 rounded hover:bg-red-700 font-bold"
             >
               NỘP BÀI
