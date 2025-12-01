@@ -818,6 +818,551 @@ interface ApiResponse<T> {
 
 ---
 
+## 🎯 Options APIs
+
+**All endpoints require authentication**
+
+### 1. Get All Options
+**GET** `/options`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    options: OptionDto[];
+  }
+}
+```
+
+---
+
+### 2. Get Options by Question
+**GET** `/options/question/:questionId`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    options: OptionDto[];
+  }
+}
+```
+
+---
+
+### 3. Get Correct Options
+**GET** `/options/question/:questionId/correct`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    options: OptionDto[];
+  }
+}
+```
+
+---
+
+### 4. Get Option by ID
+**GET** `/options/:id`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    option: OptionDto;
+  }
+}
+```
+
+---
+
+### 5. Create Option
+**POST** `/options`
+
+**Body:**
+```typescript
+{
+  questionId: string;
+  text: string;
+  imageUrl?: string;
+  isCorrect?: boolean;
+  displayOrder?: number;
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "Option created successfully";
+  data: {
+    option: OptionDto;
+  }
+}
+```
+
+---
+
+### 6. Update Option
+**PUT** `/options/:id`
+
+**Body:** Same as Create (all fields optional)
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "Option updated successfully";
+  data: {
+    option: OptionDto;
+  }
+}
+```
+
+---
+
+### 7. Delete Option
+**DELETE** `/options/:id`
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "Option deleted successfully";
+}
+```
+
+---
+
+## ↕️ Orderings APIs
+
+**All endpoints require authentication**
+
+### 1. Get All Orderings
+**GET** `/orderings`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    orderings: OrderingDto[];
+  }
+}
+```
+
+---
+
+### 2. Get Ordering by Question
+**GET** `/orderings/question/:questionId`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    ordering: OrderingDto;
+  }
+}
+```
+
+---
+
+### 3. Get Ordering by ID
+**GET** `/orderings/:id`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    ordering: OrderingDto;
+  }
+}
+```
+
+---
+
+### 4. Create Ordering
+**POST** `/orderings`
+
+**Body:**
+```typescript
+{
+  questionId: string;
+  items: string[];
+  correctOrder: string[];
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "Ordering created successfully";
+  data: {
+    ordering: OrderingDto;
+  }
+}
+```
+
+---
+
+### 5. Update Ordering
+**PUT** `/orderings/:id`
+
+**Body:** Same as Create (all fields optional)
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "Ordering updated successfully";
+  data: {
+    ordering: OrderingDto;
+  }
+}
+```
+
+---
+
+### 6. Delete Ordering
+**DELETE** `/orderings/:id`
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "Ordering deleted successfully";
+}
+```
+
+---
+
+## 🔗 Matchings APIs
+
+**All endpoints require authentication**
+
+### 1. Get All Matchings
+**GET** `/matchings`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    matchings: MatchingDto[];
+  }
+}
+```
+
+---
+
+### 2. Get Matching by Question
+**GET** `/matchings/question/:questionId`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    matching: MatchingDto;
+  }
+}
+```
+
+---
+
+### 3. Get Matching by ID
+**GET** `/matchings/:id`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    matching: MatchingDto;
+  }
+}
+```
+
+---
+
+### 4. Create Matching
+**POST** `/matchings`
+
+**Body:**
+```typescript
+{
+  questionId: string;
+  leftSide: Record<string, string>;
+  rightSide: Record<string, string>;
+  correctPairs: Record<string, string>;
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "Matching created successfully";
+  data: {
+    matching: MatchingDto;
+  }
+}
+```
+
+---
+
+### 5. Update Matching
+**PUT** `/matchings/:id`
+
+**Body:** Same as Create (all fields optional)
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "Matching updated successfully";
+  data: {
+    matching: MatchingDto;
+  }
+}
+```
+
+---
+
+### 6. Delete Matching
+**DELETE** `/matchings/:id`
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "Matching deleted successfully";
+}
+```
+
+---
+
+## 📝 Fill-Blanks APIs
+
+**All endpoints require authentication**
+
+### 1. Get All Fill-Blanks
+**GET** `/fill-blanks`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    fillBlanks: FillBlankDto[];
+  }
+}
+```
+
+---
+
+### 2. Get Fill-Blank by Question
+**GET** `/fill-blanks/question/:questionId`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    fillBlank: FillBlankDto;
+  }
+}
+```
+
+---
+
+### 3. Get Fill-Blank by ID
+**GET** `/fill-blanks/:id`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    fillBlank: FillBlankDto;
+  }
+}
+```
+
+---
+
+### 4. Create Fill-Blank
+**POST** `/fill-blanks`
+
+**Body:**
+```typescript
+{
+  questionId: string;
+  correctAnswers: string[];
+  caseSensitive?: boolean;  // Default: false
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "FillBlank created successfully";
+  data: {
+    fillBlank: FillBlankDto;
+  }
+}
+```
+
+---
+
+### 5. Update Fill-Blank
+**PUT** `/fill-blanks/:id`
+
+**Body:** Same as Create (all fields optional)
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "FillBlank updated successfully";
+  data: {
+    fillBlank: FillBlankDto;
+  }
+}
+```
+
+---
+
+### 6. Delete Fill-Blank
+**DELETE** `/fill-blanks/:id`
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "FillBlank deleted successfully";
+}
+```
+
+---
+
+## 🔢 Numeric-Inputs APIs
+
+**All endpoints require authentication**
+
+### 1. Get All Numeric-Inputs
+**GET** `/numeric-inputs`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    numericInputs: NumericInputDto[];
+  }
+}
+```
+
+---
+
+### 2. Get Numeric-Input by Question
+**GET** `/numeric-inputs/question/:questionId`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    numericInput: NumericInputDto;
+  }
+}
+```
+
+---
+
+### 3. Get Numeric-Input by ID
+**GET** `/numeric-inputs/:id`
+
+**Response:**
+```typescript
+{
+  success: true;
+  data: {
+    numericInput: NumericInputDto;
+  }
+}
+```
+
+---
+
+### 4. Create Numeric-Input
+**POST** `/numeric-inputs`
+
+**Body:**
+```typescript
+{
+  questionId: string;
+  correctNumber: number;
+  tolerance?: number;     // Default: 0
+  unit?: string;
+  step?: number;
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "NumericInput created successfully";
+  data: {
+    numericInput: NumericInputDto;
+  }
+}
+```
+
+---
+
+### 5. Update Numeric-Input
+**PUT** `/numeric-inputs/:id`
+
+**Body:** Same as Create (all fields optional)
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "NumericInput updated successfully";
+  data: {
+    numericInput: NumericInputDto;
+  }
+}
+```
+
+---
+
+### 6. Delete Numeric-Input
+**DELETE** `/numeric-inputs/:id`
+
+**Response:**
+```typescript
+{
+  success: true;
+  message: "NumericInput deleted successfully";
+}
+```
+
+---
+
 ## 📋 TypeScript Types for Frontend
 
 ### User Types
@@ -1112,6 +1657,156 @@ interface WatchlistDto {
 
 interface CreateWatchlistDto {
   quizId: string;
+}
+```
+
+---
+
+### Option Types
+
+```typescript
+interface OptionDto {
+  id: string;
+  questionId: string;
+  text: string;
+  imageUrl?: string;
+  isCorrect: boolean;
+  displayOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface CreateOptionDto {
+  questionId: string;
+  text: string;
+  imageUrl?: string;
+  isCorrect?: boolean;
+  displayOrder?: number;
+}
+
+interface UpdateOptionDto {
+  questionId?: string;
+  text?: string;
+  imageUrl?: string;
+  isCorrect?: boolean;
+  displayOrder?: number;
+}
+```
+
+---
+
+### Ordering Types
+
+```typescript
+interface OrderingDto {
+  id: string;
+  questionId: string;
+  items: string[];
+  correctOrder: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface CreateOrderingDto {
+  questionId: string;
+  items: string[];
+  correctOrder: string[];
+}
+
+interface UpdateOrderingDto {
+  questionId?: string;
+  items?: string[];
+  correctOrder?: string[];
+}
+```
+
+---
+
+### Matching Types
+
+```typescript
+interface MatchingDto {
+  id: string;
+  questionId: string;
+  leftSide: Record<string, string>;
+  rightSide: Record<string, string>;
+  correctPairs: Record<string, string>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface CreateMatchingDto {
+  questionId: string;
+  leftSide: Record<string, string>;
+  rightSide: Record<string, string>;
+  correctPairs: Record<string, string>;
+}
+
+interface UpdateMatchingDto {
+  questionId?: string;
+  leftSide?: Record<string, string>;
+  rightSide?: Record<string, string>;
+  correctPairs?: Record<string, string>;
+}
+```
+
+---
+
+### Fill-Blank Types
+
+```typescript
+interface FillBlankDto {
+  id: string;
+  questionId: string;
+  correctAnswers: string[];
+  caseSensitive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface CreateFillBlankDto {
+  questionId: string;
+  correctAnswers: string[];
+  caseSensitive?: boolean;
+}
+
+interface UpdateFillBlankDto {
+  questionId?: string;
+  correctAnswers?: string[];
+  caseSensitive?: boolean;
+}
+```
+
+---
+
+### Numeric-Input Types
+
+```typescript
+interface NumericInputDto {
+  id: string;
+  questionId: string;
+  correctNumber: number;
+  tolerance: number;
+  unit?: string;
+  step?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface CreateNumericInputDto {
+  questionId: string;
+  correctNumber: number;
+  tolerance?: number;
+  unit?: string;
+  step?: number;
+}
+
+interface UpdateNumericInputDto {
+  questionId?: string;
+  correctNumber?: number;
+  tolerance?: number;
+  unit?: string;
+  step?: number;
 }
 ```
 
