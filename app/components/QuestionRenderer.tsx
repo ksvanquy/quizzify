@@ -20,7 +20,7 @@ import {
   type MatchingDto,
   type FillBlankDto,
   type NumericInputDto,
-} from '@/lib/api/questionDetails';
+} from '@/app/lib/questionDetails';
 
 interface QuestionRendererProps {
   question: any;

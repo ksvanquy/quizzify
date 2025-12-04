@@ -1,10 +1,4 @@
-// lib/api/questionDetails.ts
-/**
- * API functions for fetching question-specific details
- * These endpoints require Bearer token authentication
- */
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { API_URL } from "@/app/lib/api";
 
 async function getAccessToken(): Promise<string | null> {
   try {
@@ -53,7 +47,7 @@ export async function fetchOptionsByQuestion(questionId: string): Promise<Option
     }
 
     const response = await fetch(
-      `${API_BASE_URL}/options/question/${questionId}`,
+      `${API_URL}/options/question/${questionId}`,
       { headers }
     );
 
@@ -95,7 +89,7 @@ export async function fetchOrderingByQuestion(questionId: string): Promise<Order
     }
 
     const response = await fetch(
-      `${API_BASE_URL}/orderings/question/${questionId}`,
+      `${API_URL}/orderings/question/${questionId}`,
       { headers }
     );
 
@@ -138,7 +132,7 @@ export async function fetchMatchingByQuestion(questionId: string): Promise<Match
     }
 
     const response = await fetch(
-      `${API_BASE_URL}/matchings/question/${questionId}`,
+      `${API_URL}/matchings/question/${questionId}`,
       { headers }
     );
 
@@ -180,7 +174,7 @@ export async function fetchFillBlankByQuestion(questionId: string): Promise<Fill
     }
 
     const response = await fetch(
-      `${API_BASE_URL}/fill-blanks/question/${questionId}`,
+      `${API_URL}/fill-blanks/question/${questionId}`,
       { headers }
     );
 
@@ -224,7 +218,7 @@ export async function fetchNumericInputByQuestion(questionId: string): Promise<N
     }
 
     const response = await fetch(
-      `${API_BASE_URL}/numeric-inputs/question/${questionId}`,
+      `${API_URL}/numeric-inputs/question/${questionId}`,
       { headers }
     );
 
