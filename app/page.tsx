@@ -43,7 +43,9 @@ export default function HomePage() {
         // Fetch user attempts nếu đã đăng nhập
         if (user) {
           try {
-            const attemptsRes = await fetch('/api/user/attempts');
+            const attemptsRes = await fetch('/api/user/attempts', {
+              credentials: "include"
+            });
             if (attemptsRes.ok) {
               const attemptsData = await attemptsRes.json();
               setUserAttempts(attemptsData);
