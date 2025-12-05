@@ -50,6 +50,15 @@ function QuestionRenderer({
   // ✅ Track fetched question to prevent re-fetching same question
   const fetchedQuestionIdRef = useRef<string | null>(null);
 
+  // Add null check - if question is null, return loading or error state
+  if (!question) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <p className="text-gray-500">Loading question...</p>
+      </div>
+    );
+  }
+
   const questionType = question.type;
 
   // Fetch question-specific details on mount or when question.id changes

@@ -47,19 +47,6 @@ export default function QuizPage({ params }: QuizPageProps) {
   const getAccessToken = useAccessToken();
   const { toast, showToast } = useToast();
   const formatTime = useFormatTime();
-  const { 
-    currentQuestionIndex, 
-    userAnswers, 
-    handleAnswerChange, 
-    goToPrevQuestion, 
-    goToNextQuestion, 
-    setCurrentQuestionIndex 
-  } = useQuizState();
-  const { handleBookmarkToggle, handleWatchlistToggle, isBookmarked, isInWatchlist } = useBookmarkWatchlist(quizId);
-  const { submitQuiz, isSubmitting } = useSubmitQuiz({
-    onSuccess: (resultId) => router.push(`/result/${resultId}`),
-    onError: (error) => showToast(error.message, 'error')
-  });
   
   // Local State
   const [quizData, setQuizData] = useState<QuizData | null>(null);
@@ -68,6 +55,22 @@ export default function QuizPage({ params }: QuizPageProps) {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [quizStartTime, setQuizStartTime] = useState<Date | null>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Initialize quiz state with proper total questions count
+  const { 
+    currentQuestionIndex, 
+    userAnswers, 
+    handleAnswerChange, 
+    goToPrevQuestion, 
+    goToNextQuestion, 
+    setCurrentQuestionIndex 
+  } = useQuizState(quizData?.questions?.length || 0);
+
+  const { handleBookmarkToggle, handleWatchlistToggle, isBookmarked, isInWatchlist } = useBookmarkWatchlist(quizId);
+  const { submitQuiz, isSubmitting } = useSubmitQuiz({
+    onSuccess: (resultId) => router.push(`/result/${resultId}`),
+    onError: (error) => showToast(error.message, 'error')
+  });
 
   const currentQuestion = useMemo(
     () => quizData?.questions?.[currentQuestionIndex] || null,
