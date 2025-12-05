@@ -28,10 +28,10 @@ async function forwardRequest(path: string, req: Request, init: RequestInit = {}
 // GET /api/bookmarks/check/:quizId - Kiểm tra bookmark tồn tại
 export async function GET(
   request: Request,
-  { params }: { params: { quizId: string } }
+  { params }: { params: Promise<{ quizId: string }> }
 ) {
   try {
-    const quizId = params.quizId;
+    const { quizId } = await params;
 
     if (!quizId) {
       return NextResponse.json({ message: 'Quiz ID không hợp lệ' }, { status: 400 });

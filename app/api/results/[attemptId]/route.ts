@@ -7,10 +7,10 @@ type RouteParams = {
 
 export async function GET(
   request: Request,
-  context: { params: RouteParams }
+  context: { params: Promise<RouteParams> }
 ) {
   try {
-    const { attemptId } = context.params;
+    const { attemptId } = await context.params;
 
     // Attach headers
     const headers: Record<string, string> = {};

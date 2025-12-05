@@ -1,20 +1,5 @@
 import { NextResponse } from 'next/server';
 import { API_URL } from '@/app/lib/api';
-import fs from 'fs';
-import path from 'path';
-
-const dataDir = path.join(process.cwd(), 'app', 'data');
-
-function loadData(filename: string) {
-  try {
-    const filePath = path.join(dataDir, filename);
-    const fileContents = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(fileContents);
-  } catch (error) {
-    console.error(`Error loading ${filename}:`, error);
-    return [];
-  }
-}
 
 async function forwardRequest(path: string, req: Request, init: RequestInit = {}) {
   // Forward Authorization or Cookie from incoming request when available
@@ -75,7 +60,7 @@ export async function GET(request: Request) {
       const bookmarks = bookmarksData?.data?.bookmarks || bookmarksData?.bookmarks || [];
       const watchlist = watchlistData?.data?.watchlist || watchlistData?.watchlist || [];
       
-      // Fetch quiz templates from NestJS API (with fallback to local JSON)
+      // Fetch quiz templates from NestJS API only (no fallback to local JSON)
       let quizTemplates: any[] = [];
       try {
         const quizzesRes = await fetch(`${API_URL}/quizzes?status=active`, { headers });
@@ -83,12 +68,18 @@ export async function GET(request: Request) {
           const quizzesData = await quizzesRes.json();
           quizTemplates = quizzesData?.data?.quizzes || quizzesData?.data || quizzesData || [];
         } else {
-          // Fallback to local JSON if API fails
-          quizTemplates = loadData('quizTemplates.json');
+          console.error('Failed to fetch quizzes:', quizzesRes.status);
+          return NextResponse.json(
+            { message: 'Failed to fetch quiz templates' },
+            { status: 500 }
+          );
         }
       } catch (err) {
-        console.warn('Failed to fetch quiz templates from API, using local JSON:', err);
-        quizTemplates = loadData('quizTemplates.json');
+        console.error('Error fetching quiz templates from API:', err);
+        return NextResponse.json(
+          { message: 'Failed to fetch quiz templates' },
+          { status: 500 }
+        );
       }
       
       // Match quizzes with bookmark/watchlist IDs

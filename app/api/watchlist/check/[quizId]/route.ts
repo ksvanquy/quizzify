@@ -28,10 +28,10 @@ async function forwardRequest(path: string, req: Request, init: RequestInit = {}
 // GET /api/watchlist/check/:quizId - Kiểm tra item có trong watchlist không
 export async function GET(
   request: Request,
-  { params }: { params: { quizId: string } }
+  { params }: { params: Promise<{ quizId: string }> }
 ) {
   try {
-    const quizId = params.quizId;
+    const { quizId } = await params;
 
     if (!quizId) {
       return NextResponse.json({ message: 'Quiz ID không hợp lệ' }, { status: 400 });

@@ -1,12 +1,30 @@
-// app/api/quizzes/[templateId]/route.js
 import { NextResponse } from 'next/server';
 import { shuffleArray } from './utils/data';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+interface ForwardRequestOptions {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+}
+
+interface ForwardRequestResult {
+  status: number;
+  body: any;
+}
+
+interface RouteParams {
+  templateId: string;
+}
+
 // Helper function like bookmarks route
-async function forwardRequest(path, req, init = {}) {
-  const headers = { ...(init.headers || {}) };
+async function forwardRequest(
+  path: string,
+  req: Request,
+  init: ForwardRequestOptions = {}
+): Promise<ForwardRequestResult> {
+  const headers: Record<string, string> = { ...(init.headers || {}) };
 
   const auth = req.headers.get('authorization');
   const cookie = req.headers.get('cookie');
@@ -15,7 +33,7 @@ async function forwardRequest(path, req, init = {}) {
   console.log('  Full Cookie:', cookie || 'MISSING');
   
   // Parse cookies to extract accessToken
-  const cookies = {};
+  const cookies: Record<string, string> = {};
   if (cookie) {
     cookie.split(';').forEach(c => {
       const [name, ...valueParts] = c.trim().split('=');
@@ -42,7 +60,7 @@ async function forwardRequest(path, req, init = {}) {
 
   const url = `${API_URL}${path}`;
   
-  const fetchOptions = { ...init, headers, redirect: 'follow' };
+  const fetchOptions: RequestInit = { ...init, headers, redirect: 'follow' };
   
   // Only add body if it exists and method is not GET
   if (init.body && init.method !== 'GET') {
@@ -52,7 +70,7 @@ async function forwardRequest(path, req, init = {}) {
   const res = await fetch(url, fetchOptions);
   const text = await res.text();
 
-  let body = text;
+  let body: any = text;
   try {
     body = JSON.parse(text);
   } catch (e) {
@@ -62,7 +80,10 @@ async function forwardRequest(path, req, init = {}) {
   return { status: res.status, body };
 }
 
-export async function GET(request, { params }) {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<RouteParams> }
+) {
   try {
     const { templateId } = await params;
     
@@ -73,25 +94,30 @@ export async function GET(request, { params }) {
     
     if (templateResult.status !== 200) {
       console.error(`❌ Failed to fetch template: status=${templateResult.status}`);
-      return NextResponse.json(templateResult.body || { message: 'Quiz template not found.' }, { status: templateResult.status });
+      return NextResponse.json(
+        templateResult.body || { message: 'Quiz template not found.' },
+        { status: templateResult.status }
+      );
     }
     
     const template = templateResult.body?.data?.quiz;
     
     if (!template) {
       console.error('❌ Template not found in response');
-      console.error('Response structure:', JSON.stringify(templateResult.body, null, 2));
-      return NextResponse.json({ message: 'Quiz template not found.' }, { status: 404 });
+      return NextResponse.json(
+        { message: 'Quiz template not found.' },
+        { status: 404 }
+      );
     }
     
     console.log(`✅ Template loaded: ${template.name}`);
-    console.log(`   ID: ${template.id}`);
-    console.log(`   Status: ${template.status}`);
-    console.log(`   Question mode: ${template.questionSelection?.mode}`);
     
     if (template.status !== 'active') {
       console.error('❌ Template is not active');
-      return NextResponse.json({ message: 'Quiz template is not active.' }, { status: 404 });
+      return NextResponse.json(
+        { message: 'Quiz template is not active.' },
+        { status: 404 }
+      );
     }
     
     // Fetch questions using forwardRequest
@@ -99,13 +125,14 @@ export async function GET(request, { params }) {
     
     if (questionsResult.status !== 200) {
       console.error(`❌ Failed to fetch questions: status=${questionsResult.status}`);
-      return NextResponse.json({ message: 'Failed to load questions.' }, { status: 500 });
+      return NextResponse.json(
+        { message: 'Failed to load questions.' },
+        { status: 500 }
+      );
     }
     
-    console.log('🔍 questionsResult.body structure:', JSON.stringify(questionsResult.body, null, 2).substring(0, 500));
-    
     // Handle both: data.questions (array) or data being array directly
-    let questions = [];
+    let questions: any[] = [];
     if (questionsResult.body?.data?.questions) {
       questions = questionsResult.body.data.questions;
     } else if (Array.isArray(questionsResult.body?.data)) {
@@ -115,10 +142,6 @@ export async function GET(request, { params }) {
     }
     
     console.log(`✅ Loaded ${questions.length} questions from NestJS`);
-    if (questions.length > 0) {
-      console.log('📄 Sample question structure:', JSON.stringify(questions[0], null, 2));
-    }
-    console.log(`📋 Template questionSelection mode: ${template.questionSelection?.mode}`);
     
     // Check user attempts using forwardRequest
     let userAttemptsCount = 0;
@@ -126,26 +149,26 @@ export async function GET(request, { params }) {
     
     if (attemptsResult.status === 200) {
       const attempts = attemptsResult.body?.data?.attempts || [];
-      userAttemptsCount = attempts.filter(a => a.status === 'completed').length;
+      userAttemptsCount = attempts.filter((a: any) => a.status === 'completed').length;
     }
 
-    // 2. Kiểm tra giới hạn số lần làm bài (maxAttempts)
-
+    // Check attempt limit
     if (template.maxAttempts !== 0 && userAttemptsCount >= template.maxAttempts) {
-      return NextResponse.json({ 
-        message: `Bạn đã hết số lần làm bài cho bài thi này. Đã làm: ${userAttemptsCount}/${template.maxAttempts} lần.` 
-      }, { status: 403 });
+      return NextResponse.json(
+        { 
+          message: `Bạn đã hết số lần làm bài cho bài thi này. Đã làm: ${userAttemptsCount}/${template.maxAttempts} lần.` 
+        },
+        { status: 403 }
+      );
     }
 
-    // 3. Chọn Câu Hỏi theo cấu hình (questionSelection)
-    let selectedQuestions = [];
+    // Select questions based on configuration
+    let selectedQuestions: any[] = [];
 
-    if (template.questionSelection.mode === 'manual' && template.questionSelection.manualQuestionIds) {
-      // Manual selection: match template's manualQuestionIds với questions IDs
-      const manualIds = template.questionSelection.manualQuestionIds.map(id => String(id));
+    if (template.questionSelection?.mode === 'manual' && template.questionSelection.manualQuestionIds) {
+      const manualIds = template.questionSelection.manualQuestionIds.map((id: any) => String(id));
       
-      console.log('📋 Manual Question Selection:');
-      console.log(`   Required IDs: ${manualIds.length}`);
+      console.log('📋 Manual Question Selection');
       
       selectedQuestions = questions.filter(q => {
         const qId = String(q.id || q._id);
@@ -153,43 +176,29 @@ export async function GET(request, { params }) {
       });
       
       console.log(`   ✅ Matched: ${selectedQuestions.length}/${manualIds.length} questions`);
-      
-      // Check for missing questions
-      const foundIds = new Set(selectedQuestions.map(q => String(q.id || q._id)));
-      const missingIds = manualIds.filter(id => !foundIds.has(id));
-      if (missingIds.length > 0) {
-        console.warn(`   ⚠️ Missing questions: ${missingIds.join(', ')}`);
-      }
-    } else if (template.questionSelection.mode === 'random') {
-      // Random selection: filter by topics then pick by difficulty
-      console.log('🎲 Random Question Selection:');
-      console.log(`   sourceTopics: ${template.questionSelection.sourceTopics?.join(', ')}`);
+    } else if (template.questionSelection?.mode === 'random') {
+      console.log('🎲 Random Question Selection');
       
       const filteredQuestions = questions.filter(q => 
-        template.questionSelection.sourceTopics?.includes(q.topic)
+        template.questionSelection?.sourceTopics?.includes(q.topic)
       );
       
       console.log(`   Filtered questions: ${filteredQuestions.length} / ${questions.length}`);
       
-      // Chọn ngẫu nhiên theo độ khó
-      const counts = template.questionSelection.randomCounts;
-      const availableByDifficulty = {};
+      // Select randomly by difficulty
+      const counts = template.questionSelection.randomCounts || {};
       
       for (const [difficulty, count] of Object.entries(counts)) {
         const questionsByDifficulty = filteredQuestions.filter(q => q.difficulty === difficulty);
-        const available = questionsByDifficulty.length;
-        const toSelect = Math.min(count, available);
-        
-        availableByDifficulty[difficulty] = `${toSelect}/${available}`;
+        const toSelect = Math.min(count as number, questionsByDifficulty.length);
         
         const shuffled = shuffleArray([...questionsByDifficulty]);
         selectedQuestions.push(...shuffled.slice(0, toSelect));
       }
       
-      console.log('   By difficulty:', availableByDifficulty);
       console.log(`   Total selected: ${selectedQuestions.length}`);
       
-      // Xáo trộn lần cuối để trộn các độ khó lại với nhau
+      // Shuffle one final time
       shuffleArray(selectedQuestions);
     }
 
@@ -197,82 +206,66 @@ export async function GET(request, { params }) {
     
     if (selectedQuestions.length === 0) {
       console.error('❌ No questions selected!');
-      console.error('Template ID:', templateId);
-      console.error('Template:', JSON.stringify(template.questionSelection, null, 2));
-      console.error('Available questions count:', questions.length);
-      if (questions.length > 0) {
-        console.error('First question structure:', JSON.stringify(questions[0], null, 2));
-      }
-      return NextResponse.json({ 
-        message: `No questions selected. Template mode: ${template.questionSelection.mode}, Available questions: ${questions.length}`
-      }, { status: 500 });
+      return NextResponse.json(
+        { 
+          message: `No questions selected. Template mode: ${template.questionSelection?.mode}, Available questions: ${questions.length}`
+        },
+        { status: 500 }
+      );
     }
 
-    // 4. Chuẩn bị dữ liệu cho Frontend (Lọc đáp án đúng và Ghép nối options)
-    const quizDataForClient = selectedQuestions.map(q => {
-      const questionData = {
-        id: q.id || q._id, // Hỗ trợ MongoDB ObjectId
+    // Prepare quiz data for client (filter correct answers)
+    const quizDataForClient = selectedQuestions.map((q: any) => {
+      const questionData: any = {
+        id: q.id || q._id,
         text: q.text,
         type: q.type,
         points: q.points || 1
       };
 
-      // Xử lý theo từng loại câu hỏi
+      // Handle by question type
       if (q.type === 'single_choice' || q.type === 'multi_choice') {
-        // TODO: NestJS API cần populate options hoặc có endpoint riêng để lấy answers
-        // Tạm thời sử dụng optionIds nếu có, hoặc cần fetch từ answers API
-        const options = q.options || []; // Giả định API sẽ populate options
+        const options = q.options || [];
         
-        // Xáo trộn nếu cần
         if (q.shuffleOptions && options.length > 0) {
           shuffleArray(options);
         }
         
         questionData.options = options;
-      } else if (q.type === 'true_false') {
-        // True/False không cần options
-        // correctAnswer sẽ được giữ bí mật
       } else if (q.type === 'ordering') {
-        // Gửi items nhưng xáo trộn thứ tự
         const items = q.shuffleOptions ? shuffleArray([...q.items]) : q.items;
         questionData.items = items;
       } else if (q.type === 'matching') {
-        // Gửi pairs nhưng xáo trộn
         const pairs = q.pairs || [];
         if (q.shuffleOptions) {
-          questionData.leftItems = shuffleArray(pairs.map(p => p.left));
-          questionData.rightItems = shuffleArray(pairs.map(p => p.right));
+          questionData.leftItems = shuffleArray(pairs.map((p: any) => p.left));
+          questionData.rightItems = shuffleArray(pairs.map((p: any) => p.right));
         } else {
-          questionData.leftItems = pairs.map(p => p.left);
-          questionData.rightItems = pairs.map(p => p.right);
+          questionData.leftItems = pairs.map((p: any) => p.left);
+          questionData.rightItems = pairs.map((p: any) => p.right);
         }
       } else if (q.type === 'fill_blank') {
-        // Fill blank chỉ cần text, không cần gửi correctAnswers
         questionData.caseSensitive = q.caseSensitive || false;
       } else if (q.type === 'image_choice' || q.type === 'image_choice_multiple') {
-        // Image choice - options should be populated by API
         let options = q.options || [];
         
-        // Xáo trộn nếu cần
         if (q.shuffleOptions && options.length > 0) {
           options = shuffleArray([...options]);
         }
         
         questionData.options = options;
       } else if (q.type === 'numeric_input') {
-        // Numeric input - gửi unit, step, tolerance (nếu có)
         questionData.unit = q.unit || '';
         questionData.step = q.step || 'any';
         questionData.tolerance = q.tolerance || 0;
       } else if (q.type === 'cloze_test') {
-        // Cloze test - text đã có placeholder {{blank_id}}
         questionData.caseSensitive = q.caseSensitive || false;
       }
 
       return questionData;
     });
   
-    // 5. Tạo Attempt mới qua forwardRequest
+    // Create new attempt
     const createAttemptResult = await forwardRequest('/attempts', request, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -289,18 +282,25 @@ export async function GET(request, { params }) {
     const attemptId = createAttemptResult.body?.data?.attempt?.id;
     
     if (!attemptId) {
-      return NextResponse.json({ message: 'No attempt ID returned' }, { status: 500 });
+      return NextResponse.json(
+        { message: 'No attempt ID returned' },
+        { status: 500 }
+      );
     }
 
-    // 6. Trả về dữ liệu bài thi
+    // Return quiz data
     return NextResponse.json({
-        attemptId: attemptId,
-        quizTitle: template.name,
-        duration: template.durationMinutes,
-        questions: quizDataForClient
+      attemptId: attemptId,
+      quizTitle: template.name,
+      duration: template.durationMinutes,
+      questions: quizDataForClient
     });
-  } catch (error) {
+    
+  } catch (error: any) {
     console.error('Error in GET /api/quizzes/[templateId]:', error);
-    return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { message: 'Internal server error', error: error.message },
+      { status: 500 }
+    );
   }
 }

@@ -27,10 +27,10 @@ interface QuizTemplate {
 // ==== GET ==== //
 export async function GET(
   request: Request,
-  context: { params: { categoryId: string } }
+  context: { params: Promise<{ categoryId: string }> }
 ) {
   try {
-    const { categoryId } = context.params;
+    const { categoryId } = await context.params;
 
     const { searchParams } = new URL(request.url);
     const includeChildren = searchParams.get("includeChildren") !== "false";
