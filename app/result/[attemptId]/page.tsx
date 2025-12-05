@@ -108,6 +108,9 @@ export default function ResultPage({ params }: ResultPageProps) {
           userAnswers: attemptData?.userAnswers
         });
         
+        console.log('🔍 Full First Question:', JSON.stringify(attemptData?.questions?.[0], null, 2));
+        console.log('🔍 Attempt Details:', attemptData?.attemptDetails);
+        
         if (!attemptData) {
           throw new Error('Invalid response structure');
         }
