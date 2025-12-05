@@ -87,6 +87,12 @@ function MatchingQuestion({
 
   return (
     <div className="space-y-4">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">
+          {question.text}
+        </h3>
+      </div>
+      
       <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
         <p className="text-sm text-purple-800">
           🔗 Kéo các mục bên phải vào ô tương ứng bên trái

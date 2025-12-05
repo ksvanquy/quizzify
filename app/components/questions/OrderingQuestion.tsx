@@ -79,6 +79,12 @@ function OrderingQuestion({
 
   return (
     <div className="space-y-4">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">
+          {question.text}
+        </h3>
+      </div>
+      
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
         <p className="text-sm text-blue-800">
           ⇅ Kéo thả để sắp xếp các mục theo đúng thứ tự

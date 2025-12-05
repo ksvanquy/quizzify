@@ -9,3 +9,4 @@ export { useAsyncData } from './useAsyncData';
 export { useFetch } from './useFetch';
 export { useTimer } from './useTimer';
 export { useSubmitQuiz } from './useSubmitQuiz';
+export { useQuestionDetails } from './useQuestionDetails';

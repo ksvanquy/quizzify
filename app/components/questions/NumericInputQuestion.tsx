@@ -25,6 +25,12 @@ function NumericInputQuestion({
 
   return (
     <div className="space-y-4">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">
+          {question.text || question.content}
+        </h3>
+      </div>
+      
       <div className="flex items-center gap-4">
         <input
           type="number"

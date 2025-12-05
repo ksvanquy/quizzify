@@ -53,9 +53,14 @@ function ImageChoiceQuestion({
 
   return (
     <div className="space-y-4">
-      {isMultiple && (
-        <p className="text-sm text-gray-600 mb-3">(Chọn nhiều hình ảnh)</p>
-      )}
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">
+          {question.text || question.content}
+        </h3>
+        {isMultiple && (
+          <p className="text-sm text-gray-600 mt-2">(Chọn nhiều hình ảnh)</p>
+        )}
+      </div>
       
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {(question.options || []).map((option: any) => {
