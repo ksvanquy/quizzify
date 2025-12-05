@@ -41,7 +41,8 @@ export async function POST(
     const body = await request.json();
     
     console.log(`   Attempt ID: ${id}`);
-    console.log(`   User Answers: ${Object.keys(body.userAnswers || {}).length} answers`);
+    console.log(`   Request Body:`, JSON.stringify(body, null, 2));
+    console.log(`   User Answers Count: ${Object.keys(body.userAnswers || {}).length}`);
     console.log(`   Time Spent: ${body.timeSpentSeconds}s`);
 
     // Forward request to NestJS backend
@@ -75,6 +76,9 @@ export async function POST(
     );
 
     const result = await response.json();
+    
+    console.log(`   Response Status: ${response.status}`);
+    console.log(`   Response Body:`, JSON.stringify(result, null, 2));
 
     if (!response.ok) {
       console.error(`   ❌ Error: ${response.status}`, result.message);
