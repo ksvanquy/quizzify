@@ -41,12 +41,12 @@ function SingleChoiceQuestion({
         </h3>
       </div>
       <div className="space-y-3">
-        {optionsToUse.map((option: any) => {
+        {optionsToUse.map((option: any, idx: number) => {
           const isCorrect = option.id === correctOptionId;
 
           return (
             <label
-              key={option.id}
+              key={option.id || `option-${idx}`}
               className={`flex items-center space-x-3 p-3 border rounded-md cursor-pointer transition ${
                 showExplanation
                   ? isCorrect
