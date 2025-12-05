@@ -62,6 +62,8 @@ export const useSubmitQuiz = (options?: SubmitQuizOptions) => {
 
         console.log('🎯 [DEBUG] Submit Quiz - Request Body:', {
           attemptId,
+          totalAnswers: Object.keys(normalizedAnswers).length,
+          answeredQuestionIds: Object.keys(normalizedAnswers),
           userAnswers: normalizedAnswers,
           timeSpentSeconds,
           requestBodySent: requestBody
