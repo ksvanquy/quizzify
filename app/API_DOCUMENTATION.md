@@ -627,8 +627,8 @@ interface ApiResponse<T> {
 **Body:**
 ```typescript
 {
-  userAnswers: Record<string, any>;  // questionId -> answer
-  timeSpentSeconds?: number;
+  userAnswers: Record<string, any>;  // questionId -> userAnswer
+  timeSpentSeconds?: number;         // Time spent in seconds
 }
 ```
 
@@ -638,10 +638,42 @@ interface ApiResponse<T> {
   success: true;
   message: "Attempt submitted successfully";
   data: {
-    attempt: AttemptDto;  // Includes score, percentage, passed
+    attempt: {
+      id: string;
+      userId: string;
+      templateId: string;
+      status: "completed";
+      totalScore: number;           // Points earned
+      percentage: number;           // Score percentage (0-100)
+      passed: boolean;              // Passed or failed
+      questions: [
+        {
+          id: string;
+          text: string;
+          type: string;
+          points: number;
+          userAnswer: any;          // User's answer
+          isCorrect: boolean;       // Was answer correct?
+          earnedPoints: number;     // Points for this question
+          correctAnswer: any;       // Correct answer
+          explanation: string;      // Explanation
+        }
+      ];
+      userAnswers: Record<string, any>;
+      timeSpentSeconds: number;
+      submittedAt: Date;
+      createdAt: Date;
+      updatedAt: Date;
+    }
   }
 }
 ```
+
+**Notes:**
+- `questions` array includes `isCorrect` for each question
+- `earnedPoints` shows points earned for each question (0 if incorrect)
+- `userAnswer` contains the answer submitted by user
+- `correctAnswer` is revealed after submission
 
 ---
 
@@ -1577,16 +1609,16 @@ interface CreateQuizTemplateDto {
 type AttemptStatus = "in-progress" | "completed" | "expired";
 
 interface AttemptQuestionDto {
-  id: number;
+  id: string;                    // Question ID
   text: string;
-  type: string;
+  type: string;                  // Question type
   points: number;
-  options?: any[];
-  correctAnswer?: any;
-  userAnswer?: any;
-  earnedPoints?: number;
-  isCorrect?: boolean;
-  explanation?: string;
+  options?: string[];            // Option IDs
+  correctAnswer?: any;           // Correct answer (varies by type)
+  userAnswer?: any;              // User's submitted answer
+  earnedPoints?: number;         // Points earned for this question
+  isCorrect?: boolean;           // Whether answer is correct
+  explanation?: string;          // Explanation for the answer
 }
 
 interface AttemptDto {
@@ -1596,8 +1628,8 @@ interface AttemptDto {
   startedAt: Date;
   submittedAt?: Date;
   status: AttemptStatus;
-  questions: AttemptQuestionDto[];
-  userAnswers?: Record<string, any>;
+  questions: AttemptQuestionDto[];  // Includes isCorrect for each question
+  userAnswers?: Record<string, any>; // Map of questionId -> userAnswer
   totalScore?: number;
   percentage?: number;
   passed?: boolean;
@@ -2031,9 +2063,36 @@ const submitAttempt = async (
 
 1. **CORS**: API cho phép CORS từ `http://localhost:3000` (configurable via env)
 2. **Cookies**: accessToken được lưu trong httpOnly cookie
-3. **Validation**: Tất cả inputs đều được validate tự động
+3. **Validation**: Tất cả inputs đều được validate tự động (forbidNonWhitelisted: false cho Record types)
 4. **Timestamps**: `createdAt` và `updatedAt` được tự động thêm bởi MongoDB
 5. **IDs**: Sử dụng MongoDB ObjectId (string format)
+
+### Scoring Logic
+
+**Khi submit attempt:**
+- Backend tính điểm dựa trên `correctAnswer` từ database
+- Mỗi question được kiểm tra dựa trên type:
+  - **single_choice**: So sánh option ID
+  - **multi_choice**: So sánh mảng option IDs (tất cả phải trùng)
+  - **true_false**: So sánh boolean value
+  - **ordering**: So sánh mảng items theo thứ tự
+  - **matching**: So sánh object pairs
+  - **fill_blank**: So sánh string (hỗ trợ case-sensitive)
+  - **numeric_input**: So sánh với tolerance range
+- `totalScore` = Tổng điểm kiếm được
+- `percentage` = (totalScore / maxScore) * 100
+- `passed` = percentage >= quiz.passingScore
+- `questions` array được update với `isCorrect`, `userAnswer`, `earnedPoints`
+
+### Question Selection in Attempts
+
+**Manual Mode:**
+- Lấy specific questions từ `quiz.questionSelection.manualQuestionIds`
+
+**Random Mode:**
+- Lấy random questions từ topics: `quiz.questionSelection.sourceTopics`
+- Số lượng mỗi difficulty: `quiz.questionSelection.randomCounts`
+- Ví dụ: easy: 2, medium: 3, hard: 1
 
 ---
 
@@ -2049,4 +2108,4 @@ NODE_ENV=development
 
 ---
 
-**Last Updated:** November 30, 2025
+**Last Updated:** December 5, 2025
