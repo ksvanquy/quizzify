@@ -279,14 +279,18 @@ export async function GET(
       );
     }
 
-    const attemptId = createAttemptResult.body?.data?.attempt?.id;
+    const attemptData = createAttemptResult.body?.data?.attempt;
+    const attemptId = attemptData?.id || attemptData?._id;
     
     if (!attemptId) {
+      console.error('❌ No attempt ID found. Response:', createAttemptResult.body);
       return NextResponse.json(
         { message: 'No attempt ID returned' },
         { status: 500 }
       );
     }
+    
+    console.log(`✅ Attempt created with ID: ${attemptId}`);
 
     // Return quiz data
     return NextResponse.json({

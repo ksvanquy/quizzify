@@ -60,24 +60,36 @@ export const useSubmitQuiz = (options?: SubmitQuizOptions) => {
           timeSpentSeconds
         };
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        const response = await fetch(`${apiUrl}/attempts/${attemptId}/submit`, {
+        console.log('🎯 [DEBUG] Submit Quiz - Request Body:', {
+          attemptId,
+          userAnswers: normalizedAnswers,
+          timeSpentSeconds,
+          requestBodySent: requestBody
+        });
+
+        // Use Next.js API route instead of direct backend call
+        const response = await fetch(`/api/attempts/${attemptId}/submit`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessToken}`
           },
-          credentials: 'include',
           signal: abortController.signal,
           body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ message: 'Failed to submit' }));
+          console.error('❌ [DEBUG] Submit Error:', {
+            status: response.status,
+            error: errorData
+          });
           throw new Error(errorData.message || `HTTP ${response.status}`);
         }
 
         const result = await response.json();
+        
+        console.log('✅ [DEBUG] Submit Success - Response:', result);
         
         // Extract result ID from various possible response formats
         let resultId: string | null = null;

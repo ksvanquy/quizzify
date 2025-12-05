@@ -1515,20 +1515,6 @@ interface QueryQuestionDto {
 
 ---
 
-### Answer Types
-
-```typescript
-interface AnswerDto {
-  id: string;
-  questionId: string;
-  text: string;
-  imageUrl?: string;
-  displayOrder: number;
-}
-```
-
----
-
 ### Quiz Types
 
 ```typescript
