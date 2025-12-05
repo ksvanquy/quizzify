@@ -94,9 +94,19 @@ export default function ResultPage({ params }: ResultPageProps) {
 
         const data = await response.json();
         console.log('Result data:', data);
-
-        // Handle response structure: { success: true, data: { attempt: {...} } }
+        
+        // Debug: Xem structure của attempt data
         const attemptData = data?.data?.attempt || data?.data || data;
+        console.log('📋 Attempt Data Structure:', {
+          hasAttempt: !!attemptData,
+          hasQuestions: !!attemptData?.questions,
+          questionsCount: attemptData?.questions?.length,
+          firstQuestion: attemptData?.questions?.[0],
+          totalScore: attemptData?.totalScore,
+          percentage: attemptData?.percentage,
+          passed: attemptData?.passed,
+          userAnswers: attemptData?.userAnswers
+        });
         
         if (!attemptData) {
           throw new Error('Invalid response structure');
