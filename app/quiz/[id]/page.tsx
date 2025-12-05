@@ -1,90 +1,109 @@
 'use client';
 
-// app/quiz/[id]/page.js (Component chính)
-
 import { useEffect, useState, useCallback, useRef, memo, use, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import QuestionRenderer from '@/app/components/QuestionRenderer';
 
-export default function QuizPage({ params }) {
+interface QuizPageProps {
+  params: Promise<{ id: string }>;
+}
+
+interface QuizData {
+  attemptId: string;
+  quizTitle: string;
+  duration: number;
+  questions: Question[];
+}
+
+interface Question {
+  id: string | number;
+  text: string;
+  type: string;
+}
+
+interface Toast {
+  message: string;
+  type: 'success' | 'error' | 'warning';
+}
+
+const MemoizedQuestionRenderer = memo(QuestionRenderer);
+
+export default function QuizPage({ params }: QuizPageProps) {
   const router = useRouter();
-  // ✅ FIX #1: In Next.js 15+, params is a Promise - must unwrap with use()
   const unwrappedParams = use(params);
   const quizId = unwrappedParams?.id;
-  
 
-  
   const { user, isBookmarked, addBookmark, removeBookmark, isInWatchlist, addToWatchlist, removeFromWatchlist } = useAuth();
   
-  const [quizData, setQuizData] = useState(null);
+  const [quizData, setQuizData] = useState<QuizData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState({});
+  const [userAnswers, setUserAnswers] = useState<Record<string, any>>({});
   const [timeRemaining, setTimeRemaining] = useState(0);
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState<Toast | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [quizStartTime, setQuizStartTime] = useState(null);
-  const toastTimeoutRef = useRef(null);
-  const submitAbortRef = useRef(null);
+  const [quizStartTime, setQuizStartTime] = useState<Date | null>(null);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const submitAbortRef = useRef<AbortController | null>(null);
 
-  // ✅ FIX #7: Extract token fetch logic to separate effect
-  const getAccessToken = useCallback(() => {
+  const getAccessToken = useCallback((): string | null => {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem('accessToken');
   }, []);
 
-  // ✅ FIX #10: Add answer validation helper (must be before early returns)
-  const isAnswerEmpty = useCallback((answer) => {
-    if (answer === null || answer === undefined) return true;
-    if (Array.isArray(answer)) return answer.length === 0;
-    if (typeof answer === 'string') return answer.trim() === '';
-    return false;
-  }, []);
-
-  // ✅ FIX #11: Memoized QuestionRenderer for performance (must be before early returns)
-  const MemoizedQuestionRenderer = memo(QuestionRenderer);
-
-  // ✅ All callbacks must be defined before early returns and effects (React Rules of Hooks)
-  const handleAnswerChange = useCallback((questionId, answer) => {
+  const handleAnswerChange = useCallback((questionId: string | number, answer: any) => {
     setUserAnswers((prev) => ({ ...prev, [questionId]: answer }));
   }, []);
 
-  // ✅ FIX #12: Memoize current question BEFORE any conditional rendering (all hooks before early returns)
-  // This prevents unnecessary re-renders in QuestionRenderer
   const currentQuestion = useMemo(
     () => quizData?.questions?.[currentQuestionIndex] || null,
-    [currentQuestionIndex, quizData?.questions?.length]
+    [currentQuestionIndex, quizData?.questions]
   );
 
-
-  // ✅ FIX #13: Memoize the answer change handler - depends ONLY on handleAnswerChange
-  // Pass questionId explicitly to avoid currentQuestion?.id dependency
   const handleCurrentQuestionAnswerChange = useCallback(
-    (answer) => {
+    (answer: any) => {
       if (currentQuestion?.id) {
         handleAnswerChange(currentQuestion.id, answer);
       }
     },
-    [handleAnswerChange]  // Only depend on stable handleAnswerChange
+    [handleAnswerChange, currentQuestion?.id]
   );
 
+  const goToPrevQuestionCallback = useCallback(() => {
+    setCurrentQuestionIndex((prev) => Math.max(0, prev - 1));
+  }, []);
 
-  // All other callbacks will be defined conditionally using useMemo to avoid hook order issues
-  // Store current question index in state to avoid dependency issues
+  const goToNextQuestionCallback = useCallback((totalQuestions: number) => {
+    setCurrentQuestionIndex((prev) => Math.min(totalQuestions - 1, prev + 1));
+  }, []);
+
+  const formatTimeCallback = useCallback((seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }, []);
+
+  const showToastCallback = useCallback((message: string, type: Toast['type'] = 'success') => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    
+    setToast({ message, type });
+    
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimeoutRef.current = null;
+    }, 3000);
+  }, []);
+
   const handleSubmitCallback = useCallback(async () => {
-    // ✅ FIX #5: Guard against multiple submits - check BEFORE any async operation
     if (isSubmitting) {
-      console.warn('Submit already in progress');
-      // Show warning directly without calling showToastCallback to avoid circular dependency
-      setToast({ message: 'Bài thi đang được nộp, vui lòng đợi...', type: 'warning' });
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
+      showToastCallback('Bài thi đang được nộp, vui lòng đợi...', 'warning');
       return;
     }
 
-    // ✅ FIX #4: Replace confirm() with better UX
     const shouldSubmit = typeof window !== 'undefined' && 
       window.confirm('Bạn có chắc chắn muốn nộp bài?');
     
@@ -93,7 +112,6 @@ export default function QuizPage({ params }) {
     setIsSubmitting(true);
 
     try {
-      // ✅ FIX #15: Validate attemptId exists
       if (!quizData?.attemptId) {
         throw new Error('Invalid quiz attempt');
       }
@@ -108,29 +126,19 @@ export default function QuizPage({ params }) {
         'Authorization': `Bearer ${accessToken}`
       };
 
-      // Create AbortController for this request
       const abortController = new AbortController();
       submitAbortRef.current = abortController;
 
-      // Prepare request body - normalize question IDs to strings
       const normalizedAnswers = Object.entries(userAnswers).reduce((acc, [key, value]) => {
         acc[String(key)] = value;
         return acc;
-      }, {});
+      }, {} as Record<string, any>);
 
       const requestBody = {
         userAnswers: normalizedAnswers,
-        timeSpentSeconds: Math.floor((new Date() - quizStartTime) / 1000)
+        timeSpentSeconds: Math.floor((new Date().getTime() - (quizStartTime?.getTime() || 0)) / 1000)
       };
-      
-      console.log('Submitting attempt:', {
-        attemptId: quizData.attemptId,
-        userAnswers: normalizedAnswers,
-        timeSpentSeconds: requestBody.timeSpentSeconds,
-        requestBody: JSON.stringify(requestBody)
-      });
 
-      // Call backend NestJS API
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const response = await fetch(`${apiUrl}/attempts/${quizData.attemptId}/submit`, {
         method: 'POST',
@@ -146,85 +154,36 @@ export default function QuizPage({ params }) {
       }
 
       const result = await response.json();
-      console.log('Submit response:', result);
       
-      // ✅ FIX #15: Validate response structure - handle multiple formats from backend
-      let resultId = null;
-      
-      // NestJS backend format: { success: true, data: { attempt: { id, ... } } }
-      if (result?.data?.attempt?.id) {
-        resultId = result.data.attempt.id;
-      } else if (result?.data?.attempt?._id) {
-        resultId = result.data.attempt._id;
-      } else if (result?.data?.id) {
-        resultId = result.data.id;
-      } else if (result?.data?._id) {
-        resultId = result.data._id;
-      } else if (result?.id) {
-        resultId = result.id;
-      } else if (result?._id) {
-        resultId = result._id;
-      } else if (result?.attemptId) {
-        resultId = result.attemptId;
-      } else if (result?.data?.attemptId) {
-        resultId = result.data.attemptId;
-      }
+      let resultId: string | null = null;
+      if (result?.data?.attempt?.id) resultId = result.data.attempt.id;
+      else if (result?.data?.attempt?._id) resultId = result.data.attempt._id;
+      else if (result?.data?.id) resultId = result.data.id;
+      else if (result?.id) resultId = result.id;
+      else if (result?.attemptId) resultId = result.attemptId;
       
       if (!resultId) {
-        console.warn('Response structure:', JSON.stringify(result, null, 2));
         throw new Error('Invalid response from server - no attempt ID found');
       }
 
       router.push(`/result/${resultId}`);
     } catch (error) {
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         console.log('Submit request was cancelled');
         return;
       }
       console.error('Error submitting quiz:', error);
-      // Show error directly without calling showToastCallback
-      const errorMsg = error.message || 'Lỗi khi nộp bài';
-      setToast({ message: errorMsg, type: 'error' });
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
+      const errorMsg = error instanceof Error ? error.message : 'Lỗi khi nộp bài';
+      showToastCallback(errorMsg, 'error');
     } finally {
       setIsSubmitting(false);
       submitAbortRef.current = null;
     }
-  }, [quizData, userAnswers, getAccessToken, isSubmitting, router, quizStartTime]);
-
-  const goToPrevQuestionCallback = useCallback(() => {
-    setCurrentQuestionIndex((prev) => Math.max(0, prev - 1));
-  }, []);
-
-  const goToNextQuestionCallback = useCallback((totalQuestions) => {
-    setCurrentQuestionIndex((prev) => Math.min(totalQuestions - 1, prev + 1));
-  }, []);
-
-  const formatTimeCallback = useCallback((seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  }, []);
-
-  const showToastCallback = useCallback((message, type = 'success') => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
-    }
-    
-    setToast({ message, type });
-    
-    toastTimeoutRef.current = setTimeout(() => {
-      setToast(null);
-      toastTimeoutRef.current = null;
-    }, 3000);
-  }, []);
+  }, [quizData, userAnswers, getAccessToken, isSubmitting, router, quizStartTime, showToastCallback]);
 
   const handleBookmarkToggleCallback = useCallback(async () => {
     if (!user) {
-      setToast({ message: 'Vui lòng đăng nhập', type: 'error' });
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
+      showToastCallback('Vui lòng đăng nhập', 'error');
       return;
     }
 
@@ -234,26 +193,20 @@ export default function QuizPage({ params }) {
 
       if (isBookmarked(qId)) {
         await removeBookmark(qId);
-        setToast({ message: 'Đã xóa khỏi bookmark', type: 'success' });
+        showToastCallback('Đã xóa khỏi bookmark', 'success');
       } else {
         await addBookmark(qId);
-        setToast({ message: 'Đã thêm vào bookmark', type: 'success' });
+        showToastCallback('Đã thêm vào bookmark', 'success');
       }
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
     } catch (error) {
       console.error('Error toggling bookmark:', error);
-      setToast({ message: 'Có lỗi xảy ra', type: 'error' });
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
+      showToastCallback('Có lỗi xảy ra', 'error');
     }
-  }, [user, quizId, isBookmarked, removeBookmark, addBookmark]);
+  }, [user, quizId, isBookmarked, removeBookmark, addBookmark, showToastCallback]);
 
   const handleWatchlistToggleCallback = useCallback(async () => {
     if (!user) {
-      setToast({ message: 'Vui lòng đăng nhập', type: 'error' });
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
+      showToastCallback('Vui lòng đăng nhập', 'error');
       return;
     }
 
@@ -263,23 +216,18 @@ export default function QuizPage({ params }) {
 
       if (isInWatchlist(qId)) {
         await removeFromWatchlist(qId);
-        setToast({ message: 'Đã xóa khỏi watchlist', type: 'success' });
+        showToastCallback('Đã xóa khỏi watchlist', 'success');
       } else {
         await addToWatchlist(qId);
-        setToast({ message: 'Đã thêm vào watchlist', type: 'success' });
+        showToastCallback('Đã thêm vào watchlist', 'success');
       }
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
     } catch (error) {
       console.error('Error toggling watchlist:', error);
-      setToast({ message: 'Có lỗi xảy ra', type: 'error' });
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => { setToast(null); }, 3000);
+      showToastCallback('Có lỗi xảy ra', 'error');
     }
-  }, [user, quizId, isInWatchlist, removeFromWatchlist, addToWatchlist]);
+  }, [user, quizId, isInWatchlist, removeFromWatchlist, addToWatchlist, showToastCallback]);
 
-  // ✅ CRITICAL: All effects MUST be before early returns (React Rules of Hooks)
-  // ✅ Cleanup on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (toastTimeoutRef.current) {
@@ -291,35 +239,23 @@ export default function QuizPage({ params }) {
     };
   }, []);
 
-  // ✅ FIX #3: Validate quizId trước khi fetch
-  // Check authentication before loading quiz
+  // Validate quizId before fetch
   useEffect(() => {
     if (!quizId) {
       setError('Invalid quiz ID');
       setLoading(false);
-      return;
     }
+  }, [quizId]);
 
-    // TODO: Uncomment to require login
-    // if (!user) {
-    //   setError('Bạn cần đăng nhập để làm bài thi.');
-    //   setLoading(false);
-    //   return;
-    // }
-  }, [quizId, user]);
-
-  // Lấy dữ liệu bài thi từ API
+  // Fetch quiz data from API
   useEffect(() => {
-    if (!quizId) return; // Don't fetch if invalid
+    if (!quizId) return;
 
     async function fetchQuiz() {
       try {
         setLoading(true);
         setError(null);
         
-        console.log('Fetching quiz:', quizId);
-        
-        // ✅ FIX #7: Get token at right time
         const accessToken = getAccessToken();
         if (!accessToken) {
           throw new Error('No access token found');
@@ -330,18 +266,14 @@ export default function QuizPage({ params }) {
           'Authorization': `Bearer ${accessToken}`
         };
         
-        console.log('✅ Authorization header set with Bearer token');
-        
         const response = await fetch(`/api/quizzes/${quizId}`, {
           method: 'GET',
           headers,
           credentials: 'include'
         });
         
-        // ✅ FIX #8: Handle non-200 status properly
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-          console.error('API Error:', response.status, errorData);
           
           if (response.status === 401) {
             throw new Error('Bạn cần đăng nhập lại để tiếp tục.');
@@ -351,9 +283,7 @@ export default function QuizPage({ params }) {
         }
         
         const data = await response.json();
-        console.log('Quiz data loaded:', data);
         
-        // ✅ FIX #9: Validate quizData structure
         if (!data || typeof data !== 'object') {
           throw new Error('Invalid response from server');
         }
@@ -362,7 +292,6 @@ export default function QuizPage({ params }) {
           throw new Error('No questions found in quiz. Please contact administrator.');
         }
 
-        // ✅ FIX #15: Validate attemptId
         if (!data.attemptId) {
           throw new Error('Failed to create quiz attempt');
         }
@@ -380,9 +309,9 @@ export default function QuizPage({ params }) {
     }
     
     fetchQuiz();
-  }, [quizId]);
+  }, [quizId, getAccessToken]);
 
-  // ✅ FIX #5: Proper timer with guards - extract to separate effect
+  // Timer effect
   useEffect(() => {
     if (!quizData || isSubmitting) return;
 
@@ -398,7 +327,7 @@ export default function QuizPage({ params }) {
     return () => clearInterval(timer);
   }, [!!quizData, isSubmitting]);
 
-  // ✅ FIX #6: Return early if data not ready
+  // Error state
   if (error) {
     return (
       <div className="container mx-auto p-4 text-center">
@@ -415,6 +344,7 @@ export default function QuizPage({ params }) {
     );
   }
 
+  // Loading state
   if (loading) {
     return (
       <div className="container mx-auto p-4 text-center">
@@ -423,7 +353,7 @@ export default function QuizPage({ params }) {
     );
   }
 
-  // ✅ FIX #9: Validate quizData and questions exist
+  // No questions state
   if (!quizData || !quizData.questions || quizData.questions.length === 0) {
     return (
       <div className="container mx-auto p-4 text-center">
@@ -434,8 +364,7 @@ export default function QuizPage({ params }) {
     );
   }
 
-  // Get current question and answer (after validation checks)
-  const currentAnswer = userAnswers[currentQuestion?.id] || null;
+  const currentAnswer = currentQuestion?.id ? userAnswers[currentQuestion.id] || null : null;
 
   return (
     <div className="container mx-auto p-4 max-w-6xl">
@@ -443,7 +372,6 @@ export default function QuizPage({ params }) {
         <div className="flex items-center gap-4 flex-1">
           <h1 className="text-2xl font-bold">{quizData.quizTitle}</h1>
           
-          {/* Bookmark & Watchlist Buttons */}
           {user && (
             <div className="flex gap-2">
               <button
@@ -486,7 +414,6 @@ export default function QuizPage({ params }) {
       </header>
 
       <div className="grid grid-cols-12 gap-6">
-        {/* Cột trái: Nội dung Câu hỏi */}
         <div className="col-span-9 bg-white p-6 rounded-lg shadow">
           <MemoizedQuestionRenderer
             question={currentQuestion}
@@ -514,7 +441,6 @@ export default function QuizPage({ params }) {
           </footer>
         </div>
 
-        {/* Cột phải: Thanh điều hướng & Nộp bài */}
         <div className="col-span-3">
           <div className="bg-white p-4 rounded-lg shadow sticky top-4">
             <h4 className="font-semibold mb-3">Tình trạng bài làm</h4>
@@ -557,7 +483,6 @@ export default function QuizPage({ params }) {
         </div>
       </div>
 
-      {/* Toast Notification */}
       {toast && (
         <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 animate-slide-up ${
           toast.type === 'success' ? 'bg-green-500' : toast.type === 'warning' ? 'bg-yellow-500' : 'bg-red-500'

@@ -1,16 +1,63 @@
 'use client';
 
-// app/result/[attemptId]/page.js (Component chính)
-
 import Link from 'next/link';
 import { useEffect, useState, use } from 'react';
 import QuestionRenderer from '@/app/components/QuestionRenderer';
 
-export default function ResultPage({ params }) {
+// TypeScript Interfaces
+interface RouteParams {
+  attemptId: string;
+}
+
+interface AttemptDetail {
+  questionId: string;
+  userAnswer: string | string[] | Record<string, string> | boolean | number;
+  isCorrect: boolean;
+  earnedPoints?: number;
+  maxPoints?: number;
+}
+
+interface Question {
+  id: string;
+  type: 'single_choice' | 'multi_choice' | 'true_false' | 'ordering' | 'matching' | 'fill_blank' | 'cloze' | 'numeric';
+  content: string;
+  options?: Array<{ id: string; text: string }>;
+  correctOptionId?: string;
+  correctOptionIds?: string[];
+  correctAnswer?: boolean | string | number;
+  correctOrder?: string[];
+  correctMatches?: Record<string, string>;
+  correctAnswers?: string[];
+  explanation?: string;
+}
+
+interface ResultData {
+  id: string;
+  templateId: string;
+  userId: string;
+  quizTitle: string;
+  score?: number;
+  correctCount: number;
+  totalQuestions: number;
+  maxScore?: number;
+  percentage: number;
+  passingScore: number;
+  passed: boolean;
+  durationMinutes: number;
+  questions: Question[];
+  attemptDetails?: AttemptDetail[];
+  completedAt?: string;
+}
+
+interface ResultPageProps {
+  params: Promise<RouteParams>;
+}
+
+export default function ResultPage({ params }: ResultPageProps) {
   const unwrappedParams = use(params);
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<ResultData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchResult() {
@@ -55,14 +102,18 @@ export default function ResultPage({ params }) {
           throw new Error('Invalid response structure');
         }
 
-        setResult(attemptData);
+        setResult(attemptData as ResultData);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching result:', error);
-        setError(error.message || 'Không thể tải kết quả. Vui lòng thử lại.');
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : 'Không thể tải kết quả. Vui lòng thử lại.';
+        setError(errorMessage);
         setLoading(false);
       }
     }
+    
     fetchResult();
   }, [unwrappedParams.attemptId]);
 
@@ -116,7 +167,7 @@ export default function ResultPage({ params }) {
         
         <p className="text-gray-600">Điểm Số Đạt Được:</p>
         <p className="text-2xl font-bold text-indigo-600">
-          {result.score || result.correctCount} / {result.maxScore || result.totalQuestions} 
+          {result.score ?? result.correctCount} / {result.maxScore ?? result.totalQuestions} 
           {result.maxScore && ` (${result.correctCount}/${result.totalQuestions} câu đúng)`}
         </p>
 
@@ -140,7 +191,7 @@ export default function ResultPage({ params }) {
             const isCorrect = attemptDetail?.isCorrect;
             
             // Get correct answer based on question type
-            let correctAnswer;
+            let correctAnswer: string | string[] | Record<string, string> | boolean | number | undefined;
             switch (q.type) {
               case 'single_choice':
                 correctAnswer = q.correctOptionId;
@@ -158,10 +209,14 @@ export default function ResultPage({ params }) {
                 correctAnswer = q.correctMatches || {};
                 break;
               case 'fill_blank':
+              case 'cloze':
                 correctAnswer = q.correctAnswers || [];
                 break;
+              case 'numeric':
+                correctAnswer = q.correctAnswer;
+                break;
               default:
-                correctAnswer = null;
+                correctAnswer = undefined;
             }
 
             return (
