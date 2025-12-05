@@ -9,44 +9,40 @@ interface RouteParams {
   attemptId: string;
 }
 
-interface AttemptDetail {
-  questionId: string;
-  userAnswer: string | string[] | Record<string, string> | boolean | number;
-  isCorrect: boolean;
-  earnedPoints?: number;
-  maxPoints?: number;
-}
-
 interface Question {
   id: string;
   type: 'single_choice' | 'multi_choice' | 'true_false' | 'ordering' | 'matching' | 'fill_blank' | 'cloze' | 'numeric';
-  content: string;
+  text: string;
+  content?: string;
+  points: number;
   options?: Array<{ id: string; text: string }>;
   correctOptionId?: string;
   correctOptionIds?: string[];
-  correctAnswer?: boolean | string | number;
+  correctAnswer?: boolean | string | number | Record<string, any>;
   correctOrder?: string[];
   correctMatches?: Record<string, string>;
   correctAnswers?: string[];
   explanation?: string;
+  
+  // From AttemptQuestionDto
+  userAnswer?: any;
+  earnedPoints?: number;
+  isCorrect?: boolean;
 }
 
 interface ResultData {
   id: string;
   templateId: string;
   userId: string;
-  quizTitle: string;
-  score?: number;
-  correctCount: number;
-  totalQuestions: number;
-  maxScore?: number;
+  quizTitle?: string;
+  totalScore?: number;
   percentage: number;
   passingScore: number;
   passed: boolean;
-  durationMinutes: number;
+  timeSpentSeconds?: number;
   questions: Question[];
-  attemptDetails?: AttemptDetail[];
-  completedAt?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 interface ResultPageProps {
@@ -176,22 +172,22 @@ export default function ResultPage({ params }: ResultPageProps) {
 
       <div className="grid grid-cols-2 gap-4 text-left p-6 border rounded-lg bg-white shadow-md">
         <p className="text-gray-600">Bài Thi:</p>
-        <p className="font-semibold">{result.quizTitle}</p>
+        <p className="font-semibold">{result.quizTitle || 'Quiz'}</p>
         
         <p className="text-gray-600">Điểm Số Đạt Được:</p>
         <p className="text-2xl font-bold text-indigo-600">
-          {result.score ?? result.correctCount} / {result.maxScore ?? result.totalQuestions} 
-          {result.maxScore && ` (${result.correctCount}/${result.totalQuestions} câu đúng)`}
+          {result.totalScore || 0} / {result.questions?.reduce((sum, q) => sum + (q.points || 1), 0) || 0} điểm
+          {result.questions && ` (${result.questions.filter(q => q.isCorrect).length}/${result.questions.length} câu đúng)`}
         </p>
 
         <p className="text-gray-600">Phần Trăm:</p>
-        <p className="text-2xl font-bold">{result.percentage}%</p>
+        <p className="text-2xl font-bold">{result.percentage?.toFixed(2) || 0}%</p>
         
         <p className="text-gray-600">Điểm Đạt:</p>
         <p className="font-semibold">{result.passingScore}%</p>
         
-        <p className="text-gray-600">Thời Gian Hoàn Thành:</p>
-        <p className="font-semibold">{result.durationMinutes} phút</p>
+        <p className="text-gray-600">Thời Gian Làm Bài:</p>
+        <p className="font-semibold">{result.timeSpentSeconds ? `${Math.floor(result.timeSpentSeconds / 60)} phút ${result.timeSpentSeconds % 60} giây` : 'N/A'}</p>
       </div>
 
       {/* Hiển thị chi tiết từng câu hỏi */}
@@ -199,37 +195,38 @@ export default function ResultPage({ params }: ResultPageProps) {
         <div className="mt-8 space-y-6 text-left">
           <h3 className="text-2xl font-bold text-gray-800">Chi tiết đáp án</h3>
           {result.questions.map((q, index) => {
-            const attemptDetail = result.attemptDetails?.find(ad => ad.questionId === q.id);
-            const userAnswer = attemptDetail?.userAnswer;
-            const isCorrect = attemptDetail?.isCorrect;
+            // Get isCorrect and userAnswer directly from question
+            const isCorrect = q.isCorrect ?? false;
+            const userAnswer = q.userAnswer;
+            const earnedPoints = q.earnedPoints ?? 0;
             
             // Get correct answer based on question type
-            let correctAnswer: string | string[] | Record<string, string> | boolean | number | undefined;
+            let correctAnswer: string | string[] | Record<string, any> | boolean | number | undefined;
             switch (q.type) {
               case 'single_choice':
-                correctAnswer = q.correctOptionId;
+                correctAnswer = q.correctOptionId || q.correctAnswer;
                 break;
               case 'multi_choice':
-                correctAnswer = q.correctOptionIds || [];
+                correctAnswer = q.correctOptionIds || q.correctAnswer || [];
                 break;
               case 'true_false':
                 correctAnswer = q.correctAnswer;
                 break;
               case 'ordering':
-                correctAnswer = q.correctOrder || [];
+                correctAnswer = q.correctOrder || q.correctAnswer || [];
                 break;
               case 'matching':
-                correctAnswer = q.correctMatches || {};
+                correctAnswer = q.correctMatches || q.correctAnswer || {};
                 break;
               case 'fill_blank':
               case 'cloze':
-                correctAnswer = q.correctAnswers || [];
+                correctAnswer = q.correctAnswers || q.correctAnswer || [];
                 break;
               case 'numeric':
                 correctAnswer = q.correctAnswer;
                 break;
               default:
-                correctAnswer = undefined;
+                correctAnswer = q.correctAnswer;
             }
 
             return (
@@ -244,9 +241,9 @@ export default function ResultPage({ params }: ResultPageProps) {
                     Câu {index + 1}/{result.questions.length}
                   </h4>
                   <div className="flex items-center gap-2">
-                    {attemptDetail?.earnedPoints !== undefined && (
+                    {earnedPoints !== undefined && (
                       <span className="text-sm font-medium">
-                        {attemptDetail.earnedPoints}/{attemptDetail.maxPoints} điểm
+                        {earnedPoints}/{q.points} điểm
                       </span>
                     )}
                     <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
